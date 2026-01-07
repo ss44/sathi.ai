@@ -54,7 +54,8 @@ PluginComponent {
         onNewMessage: (text, isError) => {
             chatModel.append({
                 "text": text,
-                "isUser": false
+                "isUser": false,
+                "shouldAnimate": true
             });
         }
     }
@@ -74,7 +75,7 @@ PluginComponent {
 
         if (message === "") return;
 
-        chatModel.append({ "text": message, "isUser": true });
+        chatModel.append({ "text": message, "isUser": true, "shouldAnimate": false });
         backend.sendMessage(message);
     }
 
@@ -135,7 +136,9 @@ PluginComponent {
                             delegate: ChatBubble {
                                 text: model.text
                                 isUser: model.isUser
+                                shouldAnimate: model.shouldAnimate
                                 width: chatColumn.width - (chatColumn.padding * 2)
+                                onAnimationCompleted: model.shouldAnimate = false
                             }
                         }
                     }
