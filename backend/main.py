@@ -12,8 +12,8 @@ def main():
     if api_key:
         try:
             client = genai.Client(api_key=api_key)
-            # Using stable gemini-2.0-flash-exp (user requested "2.5 flash at least")
-            chat = client.chats.create(model='gemini-2.0-flash-exp')
+            # bumped to 3-flash-preview
+            chat = client.chats.create(model='gemini-3-flash-preview')
         except Exception as e:
             print(json.dumps({"error": f"Init failed: {str(e)}"}), flush=True)
     else:
