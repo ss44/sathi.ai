@@ -46,12 +46,15 @@ PluginComponent {
     }
 
     property ListModel chatModel: ListModel { }
+    
 
     ChatBackend {
         id: backend
         apiKey: pluginData.geminiApiKey || ""
         running: false 
         onNewMessage: (text, isError) => {
+            loadingBar.visible = false;
+
             chatModel.append({
                 "text": text,
                 "isUser": false,
@@ -76,6 +79,8 @@ PluginComponent {
         if (message === "") return;
 
         chatModel.append({ "text": message, "isUser": true, "shouldAnimate": false });
+        loadingBar.visible = true;
+
         backend.sendMessage(message);
     }
 
@@ -104,6 +109,36 @@ PluginComponent {
                 width: parent.width
                 height: root.popoutHeight - popoutColumn.headerHeight -
                                popoutColumn.detailsHeight - Theme.spacingL
+
+                ProgressBar {
+                    id: loadingBar
+                    width: parent.width
+                    indeterminate: true
+                    visible: true
+                    // anchors.top: 20
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    height: 5
+                }
+
+                AnimatedImage {
+                    id: thinkingAnimation
+                    anchors.centerIn: parent
+                    width: 100 
+                    height: 100
+                    source: "thinking.gif"
+                    fillMode: Image.PreserveAspectFit
+                    
+                    property bool isWaiting: (root.chatModel.count > 0 && root.chatModel.get(root.chatModel.count - 1).isUser)
+
+                    opacity: isWaiting ? 0.3 : 0.0
+                    playing: isWaiting
+                    
+                    onPlayingChanged: {
+                        if (playing) currentFrame = 0
+                    }
+                    
+                    Behavior on opacity { NumberAnimation { duration: 200 } }
+                }
 
                 Flickable { 
                     id: flickable
@@ -141,6 +176,7 @@ PluginComponent {
                                 onAnimationCompleted: model.shouldAnimate = false
                             }
                         }
+
                     }
                 }
 
