@@ -17,7 +17,8 @@ PluginComponent {
     layerNamespacePlugin: "dank:sathi-ai"
 
     property var displayedEmojis: ["✨"]
-
+    property bool isLoading: false
+    
     horizontalBarPill: Component {
         Row {
             spacing: Theme.spacingXS
@@ -46,12 +47,15 @@ PluginComponent {
     }
 
     property ListModel chatModel: ListModel { }
+    
 
     ChatBackend {
         id: backend
         apiKey: pluginData.geminiApiKey || ""
         running: false 
         onNewMessage: (text, isError) => {
+            root.isLoading = false;
+
             chatModel.append({
                 "text": text,
                 "isUser": false,
@@ -76,6 +80,8 @@ PluginComponent {
         if (message === "") return;
 
         chatModel.append({ "text": message, "isUser": true, "shouldAnimate": false });
+        root.isLoading = true;
+
         backend.sendMessage(message);
     }
 
@@ -105,6 +111,26 @@ PluginComponent {
                 height: root.popoutHeight - popoutColumn.headerHeight -
                                popoutColumn.detailsHeight - Theme.spacingL
 
+                AnimatedImage {
+                    id: thinkingAnimation
+                    anchors.centerIn: parent
+                    width: 100 
+                    height: 100
+                    source: "thinking.gif"
+                    fillMode: Image.PreserveAspectFit
+                    
+                    property bool isWaiting: (root.chatModel.count > 0 && root.chatModel.get(root.chatModel.count - 1).isUser)
+
+                    opacity: isWaiting ? 0.5 : 0.0
+                    playing: isWaiting
+                    
+                    onPlayingChanged: {
+                        if (playing) currentFrame = 0
+                    }
+                    
+                    Behavior on opacity { NumberAnimation { duration: 200 } }
+                }
+
                 Flickable { 
                     id: flickable
                     anchors.top: parent.top
@@ -112,7 +138,7 @@ PluginComponent {
                     anchors.right: parent.right
                     anchors.bottom: chatInput.top
                     anchors.bottomMargin: Theme.spacingMedium
-                    
+                   
                     contentWidth: width
                     contentHeight: chatColumn.height
                     clip: true
@@ -139,8 +165,10 @@ PluginComponent {
                                 shouldAnimate: model.shouldAnimate
                                 width: chatColumn.width - (chatColumn.padding * 2)
                                 onAnimationCompleted: model.shouldAnimate = false
+                                opacity: thinkingAnimation.isWaiting ? 0.5 : 1.0
                             }
                         }
+
                     }
                 }
 

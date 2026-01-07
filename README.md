@@ -57,3 +57,6 @@ backend/.venv/bin/pip install -r backend/requirements.txt
 ## License
 
 [MIT](LICENSE)
+
+## Acknowledgments
+- Loading Gif https://giphy.com/gifs/pointer-cursor-mouse-XXH77SsudU3HW
