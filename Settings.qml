@@ -14,19 +14,11 @@ PluginSettings {
         font.weight: Font.Bold
         color: Theme.surfaceText
     }
-
-    StyledText {
-        width: parent.width
-        text: "Google Gemini Api Key"
-        font.pixelSize: Theme.fontSizeSmall
-        color: Theme.surfaceVariantText
-        wrapMode: Text.WordWrap
-    }
-
+    
     StringSetting {
         settingKey: "geminiApiKey"
-        // label: "Google Gemini API Key"
-        description: "Enter your Google Gemini API key"
+        label: "Google Gemini API Key"
+        description: "Keys can be obtained from https://aistudio.google.com/api-keys"
         placeholder: "Enter API key"
         defaultValue: ""
     }
