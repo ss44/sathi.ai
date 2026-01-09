@@ -1,10 +1,12 @@
 import QtQuick
-import "gemini.js" as Gemini
+import "providers.js" as Providers
 
 Item {
     id: root
 
     property string apiKey: ""
+    property string ollamaUrl: ""
+    
     property bool running: false
     property string model: ""
     property bool useGrounding: false
@@ -13,43 +15,44 @@ Item {
     signal newMessage(string text, bool isError)
 
     onApiKeyChanged: {
-        Gemini.setApiKey(apiKey);
+        Providers.setApiKey(apiKey);
+    }
+    
+    onOllamaUrlChanged: {
+        Providers.setOllamaUrl(ollamaUrl);
     }
     
     onModelChanged: {
-        Gemini.setModel(model);
+        Providers.setModel(model);
     }
 
     onUseGroundingChanged: {
-        Gemini.setUseGrounding(useGrounding);
+        Providers.setUseGrounding(useGrounding);
     }
 
     onSystemPromptChanged: {
-        Gemini.setSystemPrompt(systemPrompt);
+        Providers.setSystemPrompt(systemPrompt);
     }
 
     onRunningChanged: {
         // No-op or init
-        if (running && apiKey) {
-             Gemini.setApiKey(apiKey);
-             Gemini.setModel(model);
-             Gemini.setUseGrounding(useGrounding);
-             Gemini.setSystemPrompt(systemPrompt);
+        if (running) {
+             if (apiKey) Providers.setApiKey(apiKey);
+             if (ollamaUrl) Providers.setOllamaUrl(ollamaUrl);
+             
+             Providers.setModel(model);
+             Providers.setUseGrounding(useGrounding);
+             Providers.setSystemPrompt(systemPrompt);
         }
     }
 
     function sendMessage(text) {
-        if (!apiKey) {
-            newMessage("Error: API Key is missing.", true);
-            return;
-        }
-        
-        Gemini.sendMessage(text, function(response, error) {
-             if (error) {
-                 newMessage("Error: " + error, true);
-             } else {
-                 newMessage(response, false);
-             }
+        Providers.sendMessage(text, function(response, error) {
+                if (error) {
+                    newMessage("Error: " + error, true);
+                } else {
+                    newMessage(response, false);
+                }
         });
     }
 }

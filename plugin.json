@@ -8,5 +8,5 @@
   "type": "widget",
   "component": "./Sathi.qml",
   "settings": "./Settings.qml",
-  "permissions": ["settings_read", "settings_write"]
+  "permissions": ["settings_read", "settings_write", "network"]
 }

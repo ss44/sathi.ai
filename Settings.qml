@@ -22,4 +22,20 @@ PluginSettings {
         placeholder: "Enter API key"
         defaultValue: ""
     }
+
+    StringSetting {
+        settingKey: "ollamaUrl"
+        label: "Ollama URL"
+        description: "URL for your local Ollama instance (e.g. http://localhost:11434)"
+        placeholder: "http://localhost:11434"
+        defaultValue: "http://localhost:11434"
+    }
+
+    StringSetting {
+        settingKey: "systemPrompt"
+        label: "System Prompt"
+        description: "Initial instruction given to the AI to define its behavior."
+        placeholder: "You are a helpful assistant..."
+        defaultValue: "You are a helpful assistant. Answer concisely. The chat client you are running in is small so keep answers brief." 
+    }
 }

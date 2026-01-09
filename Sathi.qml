@@ -49,6 +49,7 @@ PluginComponent {
     ChatBackendChat {
         id: backendChat
         apiKey: pluginData.geminiApiKey || ""
+        ollamaUrl: pluginData.ollamaUrl || ""
         running: false 
         model: root.aiModel
         useGrounding: root.useGrounding
@@ -75,6 +76,7 @@ PluginComponent {
     ChatBackendSettings {
         id: backendSettings
         apiKey: pluginData.geminiApiKey || ""
+        ollamaUrl: pluginData.ollamaUrl || ""
         running: false
         onNewMessage: (text, isError) => {
             try {
@@ -88,22 +90,19 @@ PluginComponent {
                 console.error('failed to set models:', err)
             }
         }
-
-
     }
 
     Component.onCompleted: {
         // Delay start to ensure pluginData is ready and env vars are set
         
         Qt.callLater(() => {
-            if (pluginData.geminiApiKey) {
+            if (pluginData.geminiApiKey || pluginData.ollamaUrl) {
                 console.log('running backends now!?')
                 backendChat.running = true
                 backendSettings.running = true
             }
         })
     }
-
 
     function processMessage(message) {
         if (message === "") return;
@@ -116,9 +115,9 @@ PluginComponent {
     }
 
     function getPopoutContent() {
-        const key = pluginData.geminiApiKey;
+        const hasKey = pluginData.geminiApiKey || pluginData.ollamaUrl;
 
-        if (key && key !== "") {
+        if (hasKey) {
             return chatPopout;
         } else {
             // console.log("No API key set - is there a toast service!?"); 

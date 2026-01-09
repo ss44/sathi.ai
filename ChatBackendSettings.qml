@@ -1,33 +1,38 @@
 import QtQuick
-import "gemini.js" as Gemini
+import "providers.js" as Providers
 
 Item {
     id: root
     property string apiKey: ""
+    property string ollamaUrl: ""
     property bool running: false
     
     signal newMessage(string text, bool isError)
 
     onApiKeyChanged: {
-        Gemini.setApiKey(apiKey);
+        Providers.setApiKey(apiKey);
+    }
+    
+    onOllamaUrlChanged: {
+        Providers.setOllamaUrl(ollamaUrl);
     }
 
     onRunningChanged: {
-        if (running && apiKey) {
-            Gemini.setApiKey(apiKey);
-            fetchModels();
+        if (running) {
+             if (apiKey) Providers.setApiKey(apiKey);
+             if (ollamaUrl) Providers.setOllamaUrl(ollamaUrl);
+             fetchModels();
         }
     }
     
     function fetchModels() {
-        Gemini.listModels(function(models, error) {
-            if (error) {
-                console.warn("Error listing models: " + error);
-                // Send empty list or handle error gracefully
-                newMessage("[]", true);
-            } else {
-                newMessage(JSON.stringify(models), false);
-            }
+        Providers.listModels(function(models, error) {
+             // We can ignore partial errors as listModels tries its best
+             if (models) {
+                 newMessage(JSON.stringify(models), false);
+             } else {
+                 newMessage("[]", false);
+             }
         });
     }
 
