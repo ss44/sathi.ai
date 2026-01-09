@@ -18,21 +18,9 @@
 ### Prerequisites
 
 - Dank Material Shell
-- Python 3.x
-- `pip`
 
 ### 1. Install Plugin Dependencies
 
-The plugin uses a local Python virtual environment to manage its dependencies securely.
-
-```bash
-# Navigate to the plugin folder
-cd /path/to/dank-ai-plugin
-
-# Create virtual environment and install requirements
-python3 -m venv backend/.venv
-backend/.venv/bin/pip install -r backend/requirements.txt
-```
 
 ### 2. Configuration
 
@@ -51,7 +39,6 @@ backend/.venv/bin/pip install -r backend/requirements.txt
 
 - **"Script failed"** or **missing responses**:
   - Ensure your API Key is correct.
-  - Check that the virtual environment is set up correctly in `backend/.venv`.
   - Check the `dms` logs (`DMS_LOG_LEVEL=debug dms run`) for more details.
 
 ## License
