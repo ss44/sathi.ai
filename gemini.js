@@ -4,6 +4,7 @@ var history = [];
 var apiKey = "";
 var currentModel = "gemini-1.5-flash";
 var useGrounding = false;
+var systemPrompt = "";
 
 function setApiKey(key) {
     apiKey = key;
@@ -15,6 +16,18 @@ function setModel(model) {
 
 function setUseGrounding(enabled) {
     useGrounding = enabled;
+}
+
+function setSystemPrompt(prompt) {
+    systemPrompt = prompt;
+    console.log("System prompt set to: " + systemPrompt);
+    
+    clearHistory();
+
+    history.push({
+        role: "user",
+        parts: [{ text: prompt }]
+    });    
 }
 
 function clearHistory() {

@@ -15,6 +15,7 @@ PluginComponent {
     property bool isLoading: false
     property string aiModel: pluginData.aiModel || "gemini-flash-latest"
     property bool useGrounding: true
+    property string systemPrompt: pluginData.systemPrompt || "You are a helpful assistant. Answer concisely. The chat client you are running in is small so keep answers brief. For context the current date is " + (new Date()).toDateString() + "." 
 
     horizontalBarPill: Component {
         Row {
@@ -51,6 +52,7 @@ PluginComponent {
         running: false 
         model: root.aiModel
         useGrounding: root.useGrounding
+        systemPrompt: root.systemPrompt
 
         onNewMessage: (text, isError) => {
             root.isLoading = false;

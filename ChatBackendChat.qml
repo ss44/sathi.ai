@@ -8,6 +8,7 @@ Item {
     property bool running: false
     property string model: ""
     property bool useGrounding: false
+    property string systemPrompt: ""
 
     signal newMessage(string text, bool isError)
 
@@ -19,6 +20,13 @@ Item {
         Gemini.setModel(model);
     }
 
+    onUseGroundingChanged: {
+        Gemini.setUseGrounding(useGrounding);
+    }
+
+    onSystemPromptChanged: {
+        Gemini.setSystemPrompt(systemPrompt);
+    }
 
     onRunningChanged: {
         // No-op or init
@@ -26,6 +34,7 @@ Item {
              Gemini.setApiKey(apiKey);
              Gemini.setModel(model);
              Gemini.setUseGrounding(useGrounding);
+             Gemini.setSystemPrompt(systemPrompt);
         }
     }
 
