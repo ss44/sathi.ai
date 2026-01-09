@@ -14,6 +14,7 @@ PluginComponent {
     property var displayText: "✨"
     property bool isLoading: false
     property string aiModel: pluginData.aiModel || "gemini-flash-latest"
+    property bool useGrounding: true
 
     horizontalBarPill: Component {
         Row {
@@ -49,6 +50,7 @@ PluginComponent {
         apiKey: pluginData.geminiApiKey || ""
         running: false 
         model: root.aiModel
+        useGrounding: root.useGrounding
 
         onNewMessage: (text, isError) => {
             root.isLoading = false;

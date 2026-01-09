@@ -1,70 +1,46 @@
 import QtQuick
-import Quickshell.Io
+import "gemini.js" as Gemini
 
-Process {
+Item {
     id: root
 
     property string apiKey: ""
+    property bool running: false
+    property string model: "gemini-1.5-flash"
+    property bool useGrounding: false
+
     signal newMessage(string text, bool isError)
 
-    property string pluginPath: Qt.resolvedUrl(".").toString().replace("file://", "")
-    property string model
-
-    environment: { "GEMINI_API_KEY": apiKey, "GEMINI_MODEL": model }
-    command: [pluginPath + "backend/.venv/bin/python3", "-u", pluginPath + "backend/main.py"]
+    onApiKeyChanged: {
+        Gemini.setApiKey(apiKey);
+    }
     
-    running: false
-
-    stdout: SplitParser {
-
-        onRead: function(line) { 
-            console.log('api key? ', root.apiKey )
-            console.log("Script:", line)
-            const lines = line.split("\n");
-            
-            for (let i = 0; i < lines.length; i++) {
-               const line = lines[i].trim();
-               if (line === "") continue;
-            
-                try {
-                    const response = JSON.parse(line);
-                    if (response.text) {
-                        root.newMessage(response.text, false);
-                    } else if (response.error) {
-                        root.newMessage("Error: " + response.error, true);
-                    }
-                } catch (err) {
-                    console.warn("Failed to parse backend response:", err, line);
-                }
-            }
-        }
-    }
-
-    stderr: SplitParser {
-        onRead: line => {
-            if (line.trim()) {
-                ToastService.showError("Script error", line)
-            }
-        }
+    onModelChanged: {
+        Gemini.setModel(model);
     }
 
 
+    onRunningChanged: {
+        // No-op or init
+        if (running && apiKey) {
+             Gemini.setApiKey(apiKey);
+             Gemini.setModel(model);
+             Gemini.setUseGrounding(useGrounding);
+        }
+    }
 
     function sendMessage(text) {
-        console.log('trying to send a message from ChatBackend:', text);
-        console.log('is running:', root.running);
-        if (root.running) {
-            root.write(text + "\n");
-        } else {
-            root.newMessage("Error: Backend not running", true);
+        if (!apiKey) {
+            newMessage("Error: API Key is missing.", true);
+            return;
         }
-    }
-
-    onModelChanged: {
-        console.log('model changed to:', root.model);
-
-        root.running = false
-        root.running = true
         
+        Gemini.sendMessage(text, function(response, error) {
+             if (error) {
+                 newMessage("Error: " + error, true);
+             } else {
+                 newMessage(response, false);
+             }
+        });
     }
 }
