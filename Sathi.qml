@@ -45,16 +45,25 @@ PluginComponent {
     property ListModel availableAisModel: ListModel { }
 
 
+
     ChatBackendChat {
         id: backendChat
         apiKey: pluginData.geminiApiKey || ""
         running: false 
         onNewMessage: (text, isError) => {
             root.isLoading = false;
+            // Remove the thinking bubble if it exists
+            if (chatModel.count > 0) {
+                 var last = chatModel.get(chatModel.count - 1);
+                 if (last.isThinking === true) {
+                     chatModel.remove(chatModel.count - 1);
+                 }
+            }
             chatModel.append({
                 "text": text,
                 "isUser": false,
-                "shouldAnimate": true
+                "shouldAnimate": true,
+                "isThinking": false
             });
         }
     }
@@ -93,22 +102,22 @@ PluginComponent {
         })
     }
 
+
     function processMessage(message) {
         console.log(pluginData.geminiApiKey);
         console.log(pluginData);        
 
         if (message === "") return;
 
-        chatModel.append({ "text": message, "isUser": true, "shouldAnimate": false });
+        chatModel.append({ "text": message, "isUser": true, "shouldAnimate": false, "isThinking": false });
         root.isLoading = true;
+        chatModel.append({ "text": "", "isUser": false, "shouldAnimate": true, "isThinking": true });
 
         backendChat.sendMessage(message);
     }
 
     function getPopoutContent() {
         const key = pluginData.geminiApiKey;
-        console.log(pluginData.geminiApiKey)
-        console.log('key?', key)
         if (key && key !== "") {
             console.log('i guess we got an api key!?')
             return chatPopout;
@@ -127,30 +136,11 @@ PluginComponent {
             showCloseButton: true
 
             
+
             Item {
                 width: parent.width
                 height: root.popoutHeight - popoutColumn.headerHeight -
                                popoutColumn.detailsHeight - Theme.spacingL
-
-                AnimatedImage {
-                    id: thinkingAnimation
-                    anchors.centerIn: parent
-                    width: 100 
-                    height: 100
-                    source: "thinking.gif"
-                    fillMode: Image.PreserveAspectFit
-                    
-                    property bool isWaiting: (root.chatModel.count > 0 && root.chatModel.get(root.chatModel.count - 1).isUser)
-
-                    opacity: isWaiting ? 0.5 : 0.0
-                    playing: isWaiting
-                    
-                    onPlayingChanged: {
-                        if (playing) currentFrame = 0
-                    }
-                    
-                    Behavior on opacity { NumberAnimation { duration: 200 } }
-                }
 
                 Flickable { 
                     id: flickable
@@ -177,16 +167,16 @@ PluginComponent {
                         padding: Theme.spacingL
                         
                         onHeightChanged: flickable.scrollToBottom()
-
+                        
                         Repeater {
                             model: root.chatModel
                             delegate: ChatBubble {
                                 text: model.text
                                 isUser: model.isUser
                                 shouldAnimate: model.shouldAnimate
+                                isThinking: model.isThinking !== undefined ? model.isThinking : false
                                 width: chatColumn.width - (chatColumn.padding * 2)
                                 onAnimationCompleted: model.shouldAnimate = false
-                                opacity: thinkingAnimation.isWaiting ? 0.5 : 1.0
                             }
                         }
 
