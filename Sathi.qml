@@ -50,6 +50,7 @@ PluginComponent {
     ChatBackendChat {
         id: backendChat
         geminiApiKey: pluginData.geminiApiKey || ""
+        openaiApiKey: pluginData.openaiApiKey || ""
         ollamaUrl: pluginData.ollamaUrl || ""
         model: root.aiModel
         useGrounding: root.useGrounding
@@ -76,6 +77,7 @@ PluginComponent {
     ChatBackendSettings {
         id: backendSettings
         geminiApiKey: pluginData.geminiApiKey || ""
+        openaiApiKey: pluginData.openaiApiKey || ""
         ollamaUrl: pluginData.ollamaUrl || ""
 
         onNewModels: (models, isError) => {
@@ -101,7 +103,7 @@ PluginComponent {
     }
 
     function getPopoutContent() {
-        const hasKey = pluginData.geminiApiKey || pluginData.ollamaUrl;
+        const hasKey = pluginData.geminiApiKey || pluginData.ollamaUrl || pluginData.openaiApiKey;
 
         if (hasKey) {
             return chatPopout;

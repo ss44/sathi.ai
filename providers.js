@@ -1,15 +1,22 @@
 .pragma library
 .import "gemini.js" as Gemini
 .import "ollama.js" as Ollama
+.import "openai.js" as OpenAI
 
 var ollamaUrl = "";
 var geminiKey = "";
+var openaiKey = "";
 var loadedModels = {};
 var modelKey = "";
 
 function setGeminiApiKey(key) {
     geminiKey = key;
     Gemini.setApiKey(key);
+}
+
+function setOpenaiApiKey(key) {
+    openaiKey = key;
+    OpenAI.setApiKey(key);
 }
 
 function setOllamaUrl(url) {
@@ -27,6 +34,13 @@ function getOllamaModels(callback) {
 function getGeminiModels(callback) {
     console.log("Fetching Gemini models...");
     Gemini.listModels((models, error) => {
+        processModels(models, callback, error);
+    });
+}
+
+function getOpenaiModels(callback) {
+    console.log("Fetching OpenAI models...");
+    OpenAI.listModels((models, error) => {
         processModels(models, callback, error);
     });
 }
@@ -70,6 +84,7 @@ function setUseGrounding(enabled) {
 function setSystemPrompt(prompt) {
     Ollama.setSystemPrompt(prompt);
     Gemini.setSystemPrompt(prompt);
+    OpenAI.setSystemPrompt(prompt);
 }
 
 function listModels(callback) {
@@ -90,6 +105,8 @@ function getProvider() {
         return Ollama
     } else if (model.provider === "gemini") {
         return Gemini
+    } else if (model.provider === "openai") {
+        return OpenAI
     }
     
     throw new Error("Unknown provider: " + model.provider);
