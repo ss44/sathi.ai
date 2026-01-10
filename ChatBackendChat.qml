@@ -5,6 +5,7 @@ Item {
     id: root
 
     property string geminiApiKey: ""
+    property string openaiApiKey: ""
     property string ollamaUrl: ""
     
     property bool running: false
@@ -18,6 +19,10 @@ Item {
         Providers.setGeminiApiKey(geminiApiKey);
     }
     
+    onOpenaiApiKeyChanged: {
+        Providers.setOpenaiApiKey(openaiApiKey);
+    }
+
     onOllamaUrlChanged: {
         Providers.setOllamaUrl(ollamaUrl);
     }

@@ -4,6 +4,7 @@ import "providers.js" as Providers
 Item {
     id: root
     property string geminiApiKey: ""
+    property string openaiApiKey: ""
     property string ollamaUrl: ""
     
     // signal newMessage(string text, bool isError)
@@ -17,6 +18,11 @@ Item {
     onGeminiApiKeyChanged: {
         Providers.setGeminiApiKey(geminiApiKey);
         Providers.getGeminiModels(processModels);
+    }
+
+    onOpenaiApiKeyChanged: {
+        Providers.setOpenaiApiKey(openaiApiKey);
+        Providers.getOpenaiModels(processModels);
     }
 
     function processModels (models, error) {

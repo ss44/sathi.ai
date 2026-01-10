@@ -24,6 +24,14 @@ PluginSettings {
     }
 
     StringSetting {
+        settingKey: "openaiApiKey"
+        label: "OpenAI API Key"
+        description: "Keys can be obtained from https://platform.openai.com/api-keys"
+        placeholder: "Enter API key"
+        defaultValue: ""
+    }
+
+    StringSetting {
         settingKey: "ollamaUrl"
         label: "Ollama URL"
         description: "URL for your local Ollama instance (e.g. http://localhost:11434)"

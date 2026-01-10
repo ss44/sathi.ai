@@ -9,7 +9,7 @@
 ## Features
 
 - 💬 **Desktop Chat Interface**: Talk to AI without opening a browser.
-- ⚡ **Multi-Provider Support**: Supports **Google Gemini** and local **Ollama** models.
+- ⚡ **Multi-Provider Support**: Supports **Google Gemini**, **OpenAI**, and local (or remote?) **Ollama** models.
 - 🎨 **Markdown Support**: Chat bubbles support markdown formatting and clickable links.
 - 🛠️ **Configurable**: Set your API keys and endpoints directly in settings.
 
@@ -18,9 +18,10 @@
 ### Prerequisites
 
 - Dank Material Shell
-- (Optional) [Ollama](https://ollama.com/) running locally for local models.
+- A supported AI Provider ([Ollama](https://ollama.com)], [Gemini](https://aistudio.google.com/) or [OpenAI](https://platform.openai.com))
 
 ### 1. Install Plugin Dependencies
+- Install the plugin to your plugins directory (`~/.config/DankMaterialShell/plugins`) by default.
 
 
 ### 2. Configuration
@@ -29,6 +30,7 @@
 2. Open the **Sathi** settings page.
 3. Configure your AI providers:
    - **Google Gemini**: Enter your API Key from [Google AI Studio](https://aistudio.google.com/).
+   - **OpenAI**: Enter your API Key from [OpenAI Platform](https://platform.openai.com/api-keys).
    - **Ollama**: Enter your local server URL (default: `http://localhost:11434`).
 4. (Optional) Set a custom **System Prompt** to define the AI's persona.
 
