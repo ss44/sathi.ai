@@ -18,9 +18,10 @@
 ### Prerequisites
 
 - Dank Material Shell
-- A supported AI Provider ([Ollama](https://ollama.com)], Gemini() or OpenAI)
+- A supported AI Provider ([Ollama](https://ollama.com)], [Gemini](https://aistudio.google.com/) or [OpenAI](https://platform.openai.com))
 
 ### 1. Install Plugin Dependencies
+- Install the plugin to your plugins directory (`~/.config/DankMaterialShell/plugins`) by default.
 
 
 ### 2. Configuration
