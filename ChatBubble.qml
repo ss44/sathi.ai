@@ -14,6 +14,40 @@ DankRectangle {
     property bool isThinking: false 
     property string displayedText: ""
     property string currentThinkingPhrase: "Thinking..."
+    property var contentBlocks: []
+    property bool useRichView: !typeWriterTimer.running && !root.isThinking && root.displayedText.length > 0
+
+    onUseRichViewChanged: updateContentBlocks()
+    onDisplayedTextChanged: if (useRichView) updateContentBlocks()
+
+    function updateContentBlocks() {
+        if (!useRichView) return;
+        
+        var rawText = root.displayedText;
+        var parts = rawText.split("```");
+        var newBlocks = [];
+        
+        for (var i = 0; i < parts.length; i++) {
+            var part = parts[i];
+            if (i % 2 === 0) {
+                // Text block
+                if (part.length > 0) newBlocks.push({ type: "text", content: part });
+            } else {
+                // Code block
+                var newlineIndex = part.indexOf("\n");
+                var lang = "";
+                var code = part;
+                if (newlineIndex !== -1) {
+                    lang = part.substring(0, newlineIndex).trim();
+                    code = part.substring(newlineIndex + 1);
+                }
+                if (code.endsWith("\n")) code = code.substring(0, code.length - 1);
+                
+                newBlocks.push({ type: "code", content: code, language: lang });
+            }
+        }
+        root.contentBlocks = newBlocks;
+    }
     
     signal animationCompleted()
 
@@ -104,7 +138,7 @@ DankRectangle {
 
         TextEdit {
             id: msgText
-            visible: true 
+            visible: !root.useRichView
             text: root.isThinking ? root.currentThinkingPhrase : root.displayedText
             textFormat: TextEdit.MarkdownText
             readOnly: true
@@ -120,6 +154,46 @@ DankRectangle {
             font.pixelSize: Theme.fontSizeMedium
             font.italic: root.isThinking
             Layout.alignment: Qt.AlignTop
+        }
+
+        ColumnLayout {
+            visible: root.useRichView && !root.isThinking
+            Layout.fillWidth: true
+            spacing: Theme.spacingS
+
+            Repeater {
+                model: root.contentBlocks
+                
+                delegate: Loader {
+                    Layout.fillWidth: true
+                    sourceComponent: modelData.type === "code" ? codeComp : textComp
+                    
+                    Component {
+                        id: textComp
+                        TextEdit {
+                            // width: parent.width // TextEdit inside Layout needs careful width handling if wrapping
+                            Layout.fillWidth: true
+                            text: modelData.content
+                            textFormat: TextEdit.MarkdownText
+                            readOnly: true
+                            selectByMouse: true
+                            wrapMode: TextEdit.Wrap
+                            color: root.isUser ? Theme.surfaceVariantText : Theme.surfaceText
+                            font.pixelSize: Theme.fontSizeMedium
+                            onLinkActivated: link => Qt.openUrlExternally(link)
+                        }
+                    }
+                    
+                    Component {
+                         id: codeComp
+                         CodeBlock {
+                             code: modelData.content
+                             language: modelData.language
+                             Layout.fillWidth: true
+                         }
+                    }
+                }
+            }
         }
     }
 
