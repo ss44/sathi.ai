@@ -154,6 +154,13 @@ DankRectangle {
             font.pixelSize: Theme.fontSizeMedium
             font.italic: root.isThinking
             Layout.alignment: Qt.AlignTop
+
+            MouseArea {
+                anchors.fill: parent
+                hoverEnabled: true
+                acceptedButtons: Qt.NoButton
+                cursorShape: parent.linkAt(mouseX, mouseY) ? Qt.PointingHandCursor : Qt.IBeamCursor
+            }
         }
 
         ColumnLayout {
@@ -181,6 +188,13 @@ DankRectangle {
                             color: root.isUser ? Theme.surfaceVariantText : Theme.surfaceText
                             font.pixelSize: Theme.fontSizeMedium
                             onLinkActivated: link => Qt.openUrlExternally(link)
+
+                            MouseArea {
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                acceptedButtons: Qt.NoButton
+                                cursorShape: parent.linkAt(mouseX, mouseY) ? Qt.PointingHandCursor : Qt.IBeamCursor
+                            }
                         }
                     }
                     
