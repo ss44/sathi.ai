@@ -105,3 +105,7 @@ function sendMessage(text, callback) {
     getProvider().setModel(currentModel().name);
     getProvider().sendMessage(text, callback);
 }
+
+function isModelLoaded(modelName) {
+    return loadedModels.hasOwnProperty(modelName);
+}
