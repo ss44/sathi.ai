@@ -13,7 +13,7 @@ PluginComponent {
 
     property var displayText: "✨"
     property bool isLoading: false
-    property string aiModel: pluginData.aiModel || "gemini-flash-latest"
+    property string aiModel: pluginData.aiModel
     property bool useGrounding: true
     property string systemPrompt: pluginData.systemPrompt || "You are a helpful assistant. Answer concisely. The chat client you are running in is small so keep answers brief. For context the current date is " + (new Date()).toDateString() + "." 
     property string pendingInputText: ""
@@ -232,10 +232,11 @@ PluginComponent {
                         model: availableAisModel
                         maxPopupHeight: popoutColumn.height * 0.6
 
-                        currentValue: pluginData.aiModel
+                        currentValue: root.aiModel
                         width: parent.width
                         textRole: "display_name"
                         valueRole: "name"
+                        displayText: currentIndex === -1 ? "Select an AI Model..." : currentText
 
                         onActivated: {
                             if (pluginService) {
@@ -248,14 +249,22 @@ PluginComponent {
 
                     StyledText {
                         visible: !root.isModelAvailable && root.aiModel !== "" && availableAisModel.count > 0
-                        text: "Selected model " + root.aiModel + " currently not available"
                         color: Theme.error
                         font.pixelSize: Theme.fontSizeSmall
                         width: parent.width
                         horizontalAlignment: Text.AlignHCenter
                         wrapMode: Text.WordWrap
                         anchors.bottomMargin: Theme.spacingM
-                    }
+
+                        function getText() {
+                            if (availableAisModel.count === 0) {
+                                return "⚠️ No models are currently available. Please check your API keys and connection.";
+                            } else {
+                                return "⚠️ Selected model \"" + root.aiModel + "\" is currently not available";
+                            }
+                        }
+                        
+                        text: getText()}
                 }
 
                 MouseArea {
