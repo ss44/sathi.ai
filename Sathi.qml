@@ -147,8 +147,43 @@ PluginComponent {
                 height: root.popoutHeight - popoutColumn.headerHeight -
                                popoutColumn.detailsHeight - Theme.spacingL
 
+
+                Column {
+                    anchors.centerIn: parent
+                    width: parent.width - (Theme.spacingL * 2)
+                    spacing: Theme.spacingM
+                    visible: availableAisModel.count === 0
+
+                    StyledText {
+                        text: "No AI Models Available"
+                        font.pixelSize: Theme.fontSizeLarge
+                        font.weight: Font.Bold
+                        horizontalAlignment: Text.AlignHCenter
+                        color: Theme.surfaceText
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                    }
+
+                    StyledText {
+                        text: "Please add your API keys in the settings screen to start chatting."
+                        font.pixelSize: Theme.fontSizeMedium
+                        horizontalAlignment: Text.AlignHCenter
+                        color: Theme.surfaceText
+                        opacity: 0.7
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                    }
+
+                    DankButton {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: "Configure in Settings"
+                        onClicked: Quickshell.execDetached(["dms", "ipc", "call", "settings", "openWith", "plugins"])                    
+                    }
+                }
+
                 Flickable { 
                     id: flickable
+                    visible: availableAisModel.count > 0
                     anchors.top: parent.top
                     anchors.left: parent.left
                     anchors.right: parent.right
@@ -195,9 +230,8 @@ PluginComponent {
                     anchors.right: parent.right
                     anchors.bottom: parent.bottom
                     anchors.margins: Theme.spacingL
-                    // anchors.bottomMargin: Theme.spacingL
-                    // bottomPadding: 20
-                    
+                    visible: availableAisModel.count > 0
+
                     spacing: Theme.spacingXS
                     
                     width: parent.width
