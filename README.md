@@ -2,7 +2,7 @@
 
 **Sathi** is a Generative AI client plugin designed for **Dank Material Linux**. It enables you to interact with Large Language Models (LLMs) directly from your desktop shell.
 
-https://github.com/user-attachments/assets/8f9e807b-3b45-4358-ba98-bf46ccdce4d2
+https://github.com/user-attachments/assets/3356b406-5c11-4288-bd30-9e9a10fa6fa4
 
 ## Features
 
