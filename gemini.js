@@ -1,7 +1,7 @@
 .pragma library
 
 var apiKey = "";
-var currentModel = "gemini-1.5-flash";
+var currentModel = "";
 var useGrounding = false;
 
 function setApiKey(key) {
