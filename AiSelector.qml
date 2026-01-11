@@ -114,8 +114,8 @@ ComboBox {
     }
 
 
-    // Set cur@!!@rentValue to the value stored in the backend.
-    currentValue: 1; //backend.modifier
+    // Set currentIndex to the value stored in the backend.
+    // currentIndex: backend.modifier
     displayText: currentText
     font.pixelSize: Theme.fontSizeSmall
     font.bold: true
