@@ -1,8 +1,8 @@
 {
-  "id": "sathi.ai",
-  "name": "Sathi - An AI wrapper for Dank Linux",
-  "description": "Lets you interact with an LLM of your choice.",
-  "version": "2026.01.07",
+  "id": "sathiAi",
+  "name": "Sathi.AI",
+  "description": "A simple multi model ai client to use with your dank desktop. Use it ollama, gemini or openai models. Keys not included.",
+  "version": "1.0.0",
   "author": "Shinda Singh",
   "icon": "widgets",
   "type": "widget",

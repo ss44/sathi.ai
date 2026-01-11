@@ -7,6 +7,7 @@ Item {
     property string geminiApiKey: ""
     property string openaiApiKey: ""
     property string ollamaUrl: ""
+    property int maxHistory: 20
     
     property bool running: false
     property string model: ""
@@ -27,6 +28,10 @@ Item {
         Providers.setOllamaUrl(ollamaUrl);
     }
     
+    onMaxHistoryChanged: {
+        Providers.setMaxHistory(maxHistory);
+    }
+
     onModelChanged: {
         console.log("Model changed: " + model);
         Providers.setModel(model);

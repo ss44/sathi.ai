@@ -1,9 +1,7 @@
 .pragma library
 
-var history = [];
 var apiKey = "";
-var currentModel = "gpt-3.5-turbo";
-var systemPrompt = "";
+var currentModel = "";
 
 function setApiKey(key) {
     apiKey = key;
@@ -11,41 +9,6 @@ function setApiKey(key) {
 
 function setModel(model) {
     currentModel = model;
-}
-
-function setSystemPrompt(prompt) {
-    systemPrompt = prompt;
-    // Don't clear history on system prompt change for OpenAI, just update the system message
-    // actually, for consistency with Gemini implementation we might clear, 
-    // but usually system prompt is just the first message.
-    
-    // Check if first message is system, if so replace it
-    if (history.length > 0 && history[0].role === "system") {
-        history[0].content = prompt;
-    } else {
-        // If we want consistency with gemini.js which clears history:
-        clearHistory();
-        if (prompt) {
-            history.push({
-                role: "system",
-                content: prompt
-            });
-        }
-    }
-}
-
-function clearHistory() {
-    history = [];
-    if (systemPrompt) {
-        history.push({
-            role: "system",
-            content: systemPrompt
-        });
-    }
-}
-
-function getHistory() {
-    return history;
 }
 
 function request(method, url, callback, data) {
@@ -113,40 +76,42 @@ function listModels(callback) {
     });
 }
 
-function sendMessage(text, callback) {
+function sendChat(history, systemPrompt, callback) {
     var url = "https://api.openai.com/v1/chat/completions";
     
-    if (!history.length && systemPrompt) {
-         history.push({
+    // Map standard history to OpenAI format
+    var messages = [];
+    if (systemPrompt) {
+         messages.push({
             role: "system",
             content: systemPrompt
         });
     }
 
-    history.push({
-        role: "user",
-        content: text
-    });
+    for (var i = 0; i < history.length; i++) {
+        var item = history[i];
+         // Our internal 'model' role -> 'assistant' for openai
+        var r = (item.role === 'model') ? 'assistant' : item.role;
+        
+        messages.push({
+            role: r,
+            content: item.content
+        });
+    }
 
     var data = {
         model: currentModel,
-        messages: history
+        messages: messages
     };
 
     request("POST", url, function(response, error) {
         if (error) {
-            // Remove the failed user message? 
-            // For now let's leave it or maybe pop it.
             callback(null, error);
             return;
         }
 
         if (response.choices && response.choices.length > 0) {
             var content = response.choices[0].message.content;
-            history.push({
-                role: "assistant",
-                content: content
-            });
             callback(content, null);
         } else {
             callback(null, "No response content");

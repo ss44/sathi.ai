@@ -9,6 +9,16 @@ var openaiKey = "";
 var loadedModels = {};
 var modelKey = "";
 
+// Centralized History
+var masterHistory = []; 
+var systemPrompt = "";
+var maxHistory = 20;
+
+function setMaxHistory(max) {
+    console.log("Setting max history to: " + max);
+    maxHistory = max;
+}
+
 function setGeminiApiKey(key) {
     geminiKey = key;
     Gemini.setApiKey(key);
@@ -82,9 +92,10 @@ function setUseGrounding(enabled) {
 }
 
 function setSystemPrompt(prompt) {
-    Ollama.setSystemPrompt(prompt);
-    Gemini.setSystemPrompt(prompt);
-    OpenAI.setSystemPrompt(prompt);
+    systemPrompt = prompt;
+    // Clearing history when prompt changes? 
+    // Usually yes, if we change persona we start new chat.
+    masterHistory = [];
 }
 
 function listModels(callback) {
@@ -112,15 +123,53 @@ function getProvider() {
     throw new Error("Unknown provider: " + model.provider);
 }
 
+function pruneHistory() {
+    // If history exceeds maxHistory, remove oldest messages
+    // BUT preserve the first message? "leave the prompt as the first message and to not remove it"
+    // Usually the prompt is systemPrompt (handled separately now).
+    // If user meant the first *user* message, we can try to preserve index 0.
+    
+    // Let's assume user meant "system prompt" when they said "prompt".
+    // Since I moved systemPrompt to a separate variable, simply pruning the array is safe.
+    // If they strictly meant the first message in the array (e.g. user's first query),
+    // then:
+    
+    if (masterHistory.length > maxHistory) {
+         // Keep the first message (index 0)
+         var first = masterHistory[0];
+         // Keep the recent (maxHistory - 1) messages
+         var recent = masterHistory.slice(-(maxHistory - 1));
+         
+         masterHistory = [first].concat(recent);
+         console.log("History pruned. New length: " + masterHistory.length);
+    }
+}
+
 function sendMessage(text, callback) {
     if (!currentModel()) {
         console.log("ModelKey: " + modelKey);
         callback(null, "No model selected");
         return;
     }
+    
+    // Add to history
+    masterHistory.push({ role: "user", content: text });
+    
+    // Enforce limit
+    pruneHistory();
+    
+    console.log("Sending chat. History length: " + masterHistory.length + ". Provider " + currentModel().provider);
 
     getProvider().setModel(currentModel().name);
-    getProvider().sendMessage(text, callback);
+    // Updated signature: sendChat(history, systemPrompt, callback)
+    getProvider().sendChat(masterHistory, systemPrompt, function(response, error){
+        if (response) {
+            masterHistory.push({ role: "model", content: response });
+            pruneHistory();
+             console.log("Chat response received. Total history: " + masterHistory.length);
+        }
+        callback(response, error);
+    });
 }
 
 function isModelLoaded(modelName) {

@@ -70,6 +70,7 @@ PluginComponent {
         model: root.aiModel
         useGrounding: root.useGrounding
         systemPrompt: root.systemPrompt
+        maxHistory: pluginData.maxMessageHistory || 20
 
         onNewMessage: (text, isError) => {
             root.isLoading = false;
@@ -86,6 +87,7 @@ PluginComponent {
                 "shouldAnimate": true,
                 "isThinking": false
             });
+            root.pruneUiHistory();
         }
     }
 
@@ -108,10 +110,17 @@ PluginComponent {
         }
     }
 
+    function pruneUiHistory() {
+        while (chatModel.count > 500) {
+            chatModel.remove(0);
+        }
+    }
+
     function processMessage(message) {
         if (message === "") return;
 
         chatModel.append({ "text": message, "isUser": true, "shouldAnimate": false, "isThinking": false });
+        root.pruneUiHistory();
         root.isLoading = true;
         
         chatModel.append({ "text": "", "isUser": false, "shouldAnimate": true, "isThinking": true });

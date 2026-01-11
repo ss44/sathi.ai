@@ -1,10 +1,8 @@
 .pragma library
 
-var history = [];
 var apiKey = "";
-var currentModel = "gemini-1.5-flash";
+var currentModel = "";
 var useGrounding = false;
-var systemPrompt = "";
 
 function setApiKey(key) {
     apiKey = key;
@@ -16,25 +14,6 @@ function setModel(model) {
 
 function setUseGrounding(enabled) {
     useGrounding = enabled;
-}
-
-function setSystemPrompt(prompt) {
-    systemPrompt = prompt;
-    
-    clearHistory();
-
-    history.push({
-        role: "user",
-        parts: [{ text: prompt }]
-    });    
-}
-
-function clearHistory() {
-    history = [];
-}
-
-function getHistory() {
-    return history;
 }
 
 function request(method, url, callback, data) {
@@ -102,24 +81,43 @@ function listModels(callback) {
     });
 }
 
-function sendMessage(text, callback) {
+function sendChat(history, systemPrompt, callback) {
     if (!apiKey) {
         callback(null, "API Key not set");
         return;
     }
-
-    // Add user message to history
-    history.push({
-        role: "user",
-        parts: [{ text: text }]
-    });
+    
+    // Map standard history [{role: 'user'|'model', content: ''}] to Gemini format
+    var contents = [];
+    
+    // Pass system prompt ?? Gemini doesn't have a strict system role in generateContent usually unless using beta features or putting it in first user message?
+    // Actually typically we put system prompt as the first message from 'user' or system_instruction in 1.5
+    // Let's use system_instruction if available or fallback to prepending.
+    // For simplicity in this plugin let's just use the previous strategy: first message is user with prompt.
+    // However, if we receive a separate systemPrompt, we should use it.
+    
+    // Note: Gemini 1.5 supports system_instruction.
+    
+    for(var i=0; i<history.length; i++) {
+        var item = history[i];
+        contents.push({
+            role: item.role,
+            parts: [{ text: item.content }]
+        });
+    }
 
     var url = "https://generativelanguage.googleapis.com/v1beta/models/" + currentModel + 
         (useGrounding ? ":generateContent" : "");
     
     var payload = {
-        contents: history
+        contents: contents
     };
+    
+    if (systemPrompt) {
+         payload.system_instruction = {
+            parts: { text: systemPrompt }
+        };
+    }
 
     request("POST", url, function(response, error) {
         if (error) {
@@ -136,12 +134,6 @@ function sendMessage(text, callback) {
             response.candidates[0].content.parts.length > 0) {
             
             responseText = response.candidates[0].content.parts[0].text;
-            
-            // Add model response to history
-            history.push({
-                role: "model",
-                parts: [{ text: responseText }]
-            });
             
             callback(responseText, null);
         } else {
