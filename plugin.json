@@ -1,8 +1,8 @@
 {
   "id": "sathi.ai",
-  "name": "Sathi - An AI wrapper for Dank Linux",
+  "name": "Sathi - A Dank AI widget for Dank Material Shell",
   "description": "Lets you interact with an LLM of your choice.",
-  "version": "2026.01.07",
+  "version": "1.0.0",
   "author": "Shinda Singh",
   "icon": "widgets",
   "type": "widget",

@@ -1,9 +1,7 @@
 .pragma library
 
-var history = [];
 var baseUrl = "http://localhost:11434"; // Default
 var currentModel = "llama3";
-var systemPrompt = "";
 
 function setBaseUrl(url) {
     if (url) {
@@ -23,14 +21,6 @@ function setModel(model) {
     } else {
         currentModel = model;
     }
-}
-
-function setSystemPrompt(prompt) {
-    systemPrompt = prompt;
-}
-
-function clearHistory() {
-    history = [];
 }
 
 function request(method, url, callback, data) {
@@ -84,22 +74,23 @@ function listModels(callback) {
     });
 }
 
-function sendMessage(text, callback) {
-    // Add user message to history
-    history.push({
-        role: "user",
-        content: text
-    });
-
+function sendChat(history, systemPrompt, callback) {
     var url = baseUrl + "/api/chat";
     
+    // Map standard history [{role: 'user'|'model', content: ''}] to Ollama [{role: 'user'|'assistant', content: ''}]
     var messages = [];
     if (systemPrompt) {
         messages.push({ role: "system", content: systemPrompt });
     }
-    // Append history
+    
     for (var i = 0; i < history.length; i++) {
-        messages.push(history[i]);
+        var item = history[i];
+        // Our internal 'model' role -> 'assistant' for ollama
+        var r = (item.role === 'model') ? 'assistant' : item.role;
+        messages.push({
+            role: r,
+            content: item.content
+        });
     }
     
     var payload = {
@@ -118,12 +109,6 @@ function sendMessage(text, callback) {
         
         if (response.message && response.message.content) {
             responseText = response.message.content;
-            
-            history.push({
-                role: "assistant",
-                content: responseText
-            });
-            
             callback(responseText, null);
         } else {
             callback(null, "Empty response from Ollama");
