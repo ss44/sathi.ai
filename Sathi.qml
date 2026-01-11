@@ -13,7 +13,7 @@ PluginComponent {
 
     property var displayText: "✨"
     property bool isLoading: false
-    property string aiModel: pluginData.aiModel
+    property string aiModel: pluginData.aiModel || ""
     property bool useGrounding: true
     property string systemPrompt: pluginData.systemPrompt || "You are a helpful assistant. Answer concisely. The chat client you are running in is small so keep answers brief. For context the current date is " + (new Date()).toDateString() + "." 
     property string pendingInputText: ""
@@ -39,7 +39,6 @@ PluginComponent {
                 text: root.displayText
                 font.pixelSize: Theme.fontSizeMedium
                 color: Theme.surfaceText
-                anchors.verticalCenter: parent.verticalCenter
             }
         }
     }
@@ -127,18 +126,7 @@ PluginComponent {
         backendChat.sendMessage(message);
     }
 
-    function getPopoutContent() {
-        const hasKey = pluginData.geminiApiKey || pluginData.ollamaUrl || pluginData.openaiApiKey;
-
-        if (hasKey) {
-            return chatPopout;
-        } else {
-            // console.log("No API key set - is there a toast service!?"); 
-            ToastService.showError("Script failed", "Exit code: " + exitCode)
-        }
-    }
-
-    popoutContent: getPopoutContent()
+    popoutContent: chatPopout
 
     Component {
         id: chatPopout
@@ -243,11 +231,27 @@ PluginComponent {
                         model: availableAisModel
                         maxPopupHeight: popoutColumn.height * 0.6
 
-                        currentValue: root.aiModel
                         width: parent.width
                         textRole: "display_name"
                         valueRole: "name"
                         displayText: currentIndex === -1 ? "Select an AI Model..." : currentText
+
+                        function updateIndex() {
+                            for (var i = 0; i < availableAisModel.count; i++) {
+                                if (availableAisModel.get(i).name === root.aiModel) {
+                                    currentIndex = i;
+                                    return;
+                                }
+                            }
+                            currentIndex = -1;
+                        }
+
+                        Component.onCompleted: updateIndex()
+
+                        Connections {
+                            target: availableAisModel
+                            function onCountChanged() { cbModelSelector.updateIndex() }
+                        }
 
                         onActivated: {
                             if (pluginService) {

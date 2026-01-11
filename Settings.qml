@@ -5,7 +5,7 @@ import qs.Widgets
 
 PluginSettings {
     id: root
-    pluginId: "sathi.ai"
+    pluginId: "sathiAi"
 
     StyledText {
         width: parent.width
