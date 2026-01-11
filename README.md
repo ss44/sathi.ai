@@ -53,6 +53,9 @@ https://github.com/user-attachments/assets/0e90c1ff-e7d1-4b15-98a0-434727c99665
 ## Ai Disclosure
 - While I take pride in writing a chunk of the code by hand and resolving logic that the AI just couldn't get right, I also used AI to do a bunch of tedious, monotonous tasks, which in my opinion is the perfect use of it.
 
+## Sceenshots
+- <img width="1386" height="938" alt="sathi-ai" src="https://github.com/user-attachments/assets/9721effc-c5e0-4269-8170-a4e0b8a95d02" />
+
 ## License
 
 [MIT](LICENSE)
