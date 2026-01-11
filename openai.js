@@ -1,7 +1,7 @@
 .pragma library
 
 var apiKey = "";
-var currentModel = "gpt-3.5-turbo";
+var currentModel = "";
 
 function setApiKey(key) {
     apiKey = key;
