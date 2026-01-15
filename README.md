@@ -1,4 +1,4 @@
-# Sathi.Ai
+# SathiAi
 
 **Sathi** is a Generative AI client plugin designed particularly for **Dank Material Shell**. It enables you to interact with Large Language Models (LLMs) directly from your desktop shell making it easy to ask questions, find commands without needing to switch apps or open a browser.
 
