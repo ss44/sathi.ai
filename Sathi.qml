@@ -94,12 +94,12 @@ PluginComponent {
         }
 
         onChatHistoryLoaded: (chatHistory) => {
-            console.debug("onChat history loaded:", chatHistory);
+            console.debug("Chat history loaded:", chatHistory);
             for (var i = 0; i < chatHistory.length; i++) {
                 var message = chatHistory[i];
                 chatModel.append({
                     "text": message.content,
-                    "isUser": message.role == "user",
+                    "isUser": message.role === "user",
                     "shouldAnimate": false,
                     "isThinking": false
                 });

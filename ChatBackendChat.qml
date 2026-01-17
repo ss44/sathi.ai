@@ -88,14 +88,14 @@ Item {
      *  - pluginId is set.
      *  - pluginService is set
      *  - persistChatHistory is enabled
-     *  - and we haven't attempted to already load chat history previosly.
+     *  - and we haven't attempted to already load chat history previously.
      **/
     
     function tryToLoadChatHistory() {
         console.debug("Trying to load chat history...", pluginId, pluginService, persistChatHistory, internal.tryToLoadChat);
 
         if (!pluginId || !pluginService || !persistChatHistory || !internal.tryToLoadChat) {
-            return
+            return;
         }
 
         try {

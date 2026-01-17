@@ -30,7 +30,7 @@ function setPersistChatHistory(enabled) {
     persistChatHistory = enabled;
     
     // We should clear our messages if we've been turned off and save them if we've been turned on.
-    enabled ? saveChatHistory() :clearSavedChatHistory();
+    enabled ? saveChatHistory() : clearSavedChatHistory();
 }
 
 function clearSavedChatHistory() {
@@ -194,7 +194,7 @@ function sendMessage(text, callback) {
             masterHistory.push({ role: "model", content: response });
             pruneHistory();
             saveChatHistory();
-             console.log("Chat response received. Total history: " + masterHistory.length);
+            console.log("Chat response received. Total history: " + masterHistory.length);
         }
         callback(response, error);
     });
@@ -239,7 +239,7 @@ function saveChatHistory() {
  */
 function loadChatHistory() {
     console.debug("Attempting to load chat history.");
-    if (!persistChatHistory || !pluginService) {
+    if (!persistChatHistory || !pluginService || !pluginId) {
         return [];
     }
 
