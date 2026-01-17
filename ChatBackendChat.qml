@@ -81,7 +81,7 @@ Item {
             chatHistoryLoaded(Providers.loadChatHistory());
         }
 
-        // Regardless of if we loaded or not based on there persistChatHistory setting,
+        // Regardless of if we loaded or not based on the persistChatHistory setting,
         // we only want to try it the once at load which is the only time
         // these variables should get set.
         internal.tryToLoadChat = false;
