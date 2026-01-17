@@ -207,7 +207,8 @@ PluginComponent {
                     anchors.right: parent.right
                     anchors.bottom: columnBottomSection.top
                     anchors.bottomMargin: Theme.spacingL
-                   
+                    anchors.margins: Theme.spacingL
+                    
                     contentWidth: width
                     contentHeight: chatColumn.height
                     clip: true
