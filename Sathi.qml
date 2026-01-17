@@ -75,7 +75,7 @@ PluginComponent {
         }
 
         root.isModelAvailable = backendSettings.isModelAvailable(root.aiModel);
-        console.log("Model availability for " + root.aiModel + ": " + root.isModelAvailable);
+        console.debug("Model availability for " + root.aiModel + ": " + root.isModelAvailable);
     }
 
     ChatBackendChat {
@@ -108,7 +108,7 @@ PluginComponent {
         }
 
         onChatHistoryLoaded: (chatHistory) => {
-            console.log("onChat history loaded:", chatHistory);
+            console.debug("onChat history loaded:", chatHistory);
             for (var i = 0; i < chatHistory.length; i++) {
                 var message = chatHistory[i];
                 chatModel.append({
@@ -168,9 +168,9 @@ PluginComponent {
 
             onVisibleChanged: {
                 if (visible) {
-                    console.log("PopoutComponent visible");
-                     chatInput.forceActiveFocus();
-                     chatInput.cursorPosition = chatInput.length;
+                    console.debug("PopoutComponent visible");
+                    chatInput.forceActiveFocus();
+                    chatInput.cursorPosition = chatInput.length;
                 }
             }            
 
@@ -280,7 +280,7 @@ PluginComponent {
                         // anchors.margins: Theme.spacingL
                         onAccepted: {
                             // Handle the input text here
-                            console.log("User input:", text); 
+                            console.debug("User input:", text); 
                             root.processMessage(text);
                             
                             text = ""; // Clear input after processing

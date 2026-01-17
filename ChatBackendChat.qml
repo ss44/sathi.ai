@@ -46,7 +46,7 @@ Item {
     }
 
     onModelChanged: {
-        console.log("Model changed: " + model);
+        console.debug("Model changed: " + model);
         Providers.setModel(model);
     }
 
@@ -77,8 +77,12 @@ Item {
         Providers.setPluginIdAndService(id, service);
 
         if (persistChatHistory && internal.tryToLoadChat) {
-            console.log("Loading chat history for plugin ID:", id);
-            chatHistoryLoaded(Providers.loadChatHistory());
+            console.debug("Loading chat history for plugin ID:", id);
+            try {
+                chatHistoryLoaded(Providers.loadChatHistory());
+            } catch (e) {
+                console.error("Error loading chat history: " + e);
+            }
         }
 
         // Regardless of if we loaded or not based on there persistChatHistory setting,

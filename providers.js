@@ -205,7 +205,7 @@ function saveChatHistory() {
 }
 
 function loadChatHistory() {
-    console.log("Attempting to load chat history.");
+    console.debug("Attempting to load chat history.");
     if (!persistChatHistory || !pluginService) {
         return [];
     }
@@ -219,7 +219,7 @@ function loadChatHistory() {
     if (chatHistory) {
         try {
             masterHistory = JSON.parse(chatHistory);
-            console.info("Chat history loaded. Length: " + masterHistory.length);
+            console.debug("Chat history loaded. Length: " + masterHistory.length);
         } catch (e) {
             console.error("Error parsing chat history: " + e);
             masterHistory = [];
