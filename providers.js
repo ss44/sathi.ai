@@ -211,7 +211,8 @@ function loadChatHistory() {
     }
 
     if (masterHistory.length > 0) {
-        throw new Error("Chat history already loaded");
+        console.warn("Chat history already loaded, skipping reload.");
+        return masterHistory;
     }
 
     var chatHistory = pluginService.loadPluginData(pluginId, "chatHistory");
