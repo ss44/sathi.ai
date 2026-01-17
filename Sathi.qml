@@ -7,6 +7,7 @@ import qs.Common
 import qs.Services
 import qs.Widgets
 import qs.Modules.Plugins
+import qs.Modals.Common
 
 PluginComponent {
     id: root
@@ -64,7 +65,7 @@ PluginComponent {
             "SathiAI",
             message.substring(0, 100) + (message.length > 100 ? "..." : "")
         ]
-        running: false
+        running: falsed
     }
 
     onAvailableAisModelChanged: {
@@ -320,38 +321,89 @@ PluginComponent {
                     }
 
                     // Display a small combo box at the bottom to change the model dynamically.
-                    AiSelector {
-                        id: cbModelSelector
-                        model: availableAisModel
-                        maxPopupHeight: popoutColumn.height * 0.6
-
+                    Row {
+                        id: bottomModelSelectorRow
                         width: parent.width
-                        textRole: "display_name"
-                        valueRole: "name"
-                        displayText: currentIndex === -1 ? "Select an AI Model..." : currentText
+                        height: cbModelSelector.implicitHeight + Theme.spacingXL
+                        spacing: Theme.spacingS
+                        anchors.bottomMargin: Theme.spacingXL
 
-                        function updateIndex() {
-                            for (var i = 0; i < availableAisModel.count; i++) {
-                                if (availableAisModel.get(i).name === root.aiModel) {
-                                    currentIndex = i;
-                                    return;
+                        AiSelector {
+                            id: cbModelSelector
+                            model: availableAisModel
+                            maxPopupHeight: popoutColumn.height * 0.6
+
+                            width: parent.width - rowBottomRowActions.width - Theme.spacingS
+                            textRole: "display_name"
+                            valueRole: "name"
+                            displayText: currentIndex === -1 ? "Select an AI Model..." : currentText
+
+                            function updateIndex() {
+                                for (var i = 0; i < availableAisModel.count; i++) {
+                                    if (availableAisModel.get(i).name === root.aiModel) {
+                                        currentIndex = i;
+                                        return;
+                                    }
+                                }
+                                currentIndex = -1;
+                            }
+
+                            Component.onCompleted: updateIndex()
+
+                            Connections {
+                                target: availableAisModel
+                                function onCountChanged() { cbModelSelector.updateIndex() }
+                            }
+
+                            onActivated: {
+                                if (pluginService) {
+                                    root.aiModel = currentValue
+                                    pluginService.savePluginData(pluginId, "aiModel", currentValue)
+                                    root.checkModelAvailability()
                                 }
                             }
-                            currentIndex = -1;
                         }
+                        
+                        Row {
+                            id: rowBottomRowActions
+                            width: Theme.fontSizeLarge * 2 + Theme.spacingS
+                            height: cbModelSelector.implicitHeight
 
-                        Component.onCompleted: updateIndex()
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: Theme.spacingS
+                            anchors.top: parent.top
 
-                        Connections {
-                            target: availableAisModel
-                            function onCountChanged() { cbModelSelector.updateIndex() }
-                        }
+ 
+                            DankActionButton {
+                                anchors.top: parent.top
+                                anchors.margins: Theme.spacingXS
+                                
+                                visible: true
+                                
+                                iconName: "history_off"
+                                buttonSize: 32
+                                iconSize: 18
+                                
+                                ConfirmModal {
+                                    id: clearChatConfirm
+                                }                                
 
-                        onActivated: {
-                            if (pluginService) {
-                                root.aiModel = currentValue
-                                pluginService.savePluginData(pluginId, "aiModel", currentValue)
-                                root.checkModelAvailability()
+                                // Yes, this seems a bit hacky but the alternative recommended way
+                                // seems to be to run a shell command to copy to clipboard which IMO seems just as convoluted.
+                                // The text copied retains the general markdown formatting (like new lines) when pasted into rich text fields.
+                                // Also seems to let QT deal with platform differences internally..
+                                //
+                                // It still appears in our clipboard history so this works well enough.
+                                // https://danklinux.com/docs/dankmaterialshell/plugin-development#copying-to-clipboard
+                                onClicked: () => {
+                                    clearChatConfirm.showWithOptions({
+                                        title: "Clear Chat",
+                                        message: "Are you sure you want to clear the current chat history? This action cannot be undone.",
+                                        confirmText: "Clear",
+                                        confirmColor: Theme.error,
+                                        onConfirm: () => backendChat.clearChat()
+                                    });
+                                }
                             }
                         }
                     }

@@ -109,4 +109,10 @@ Item {
         // these variables should get set.
         internal.tryToLoadChat = false;
     }
+
+    function clearChat() {
+        console.debug("Clearing chat history as requested.");
+        Providers.clearChatHistory();
+        chatModel.clear();
+    }
 }

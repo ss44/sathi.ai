@@ -42,6 +42,12 @@ function clearSavedChatHistory() {
     pluginService.savePluginData(pluginId, "chatHistory", null);
 }
 
+function clearChatHistory() {
+    console.debug("Clearing in-memory chat history.");
+
+    masterHistory = [];
+    clearSavedChatHistory();
+}
 
 function setGeminiApiKey(key) {
     geminiKey = key;
