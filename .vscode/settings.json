@@ -3,7 +3,7 @@
     "commands": [
       {
         // Run whenever html, css, or js files are saved
-        "match": "\\.(qml)$",
+        "match": "\\.(qml|js)$",
         "cmd": "dms ipc call plugins reload sathi.ai",
       },
     ],

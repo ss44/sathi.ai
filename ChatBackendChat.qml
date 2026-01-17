@@ -1,9 +1,10 @@
 import QtQuick
+
 import "providers.js" as Providers
 
 Item {
     id: root
-
+    
     property string geminiApiKey: ""
     property string openaiApiKey: ""
     property string ollamaUrl: ""
@@ -13,8 +14,10 @@ Item {
     property string model: ""
     property bool useGrounding: false
     property string systemPrompt: ""
+    property bool persistChatHistory: false
 
     signal newMessage(string text, bool isError)
+    signal chatHistoryLoaded(var chatHistory)
 
     onGeminiApiKeyChanged: {
         Providers.setGeminiApiKey(geminiApiKey);
@@ -30,6 +33,10 @@ Item {
     
     onMaxHistoryChanged: {
         Providers.setMaxHistory(maxHistory);
+    }
+
+    onPersistChatHistoryChanged: {
+        Providers.setPersistChatHistory(persistChatHistory);
     }
 
     onModelChanged: {
@@ -54,5 +61,20 @@ Item {
                 newMessage(response, false);
             }
         });
+    }
+
+    function setPluginIdAndService(id, service) {
+        if (!id || !service) {
+            return false;
+        }
+
+        Providers.setPluginIdAndService(id, service);
+
+        if (persistChatHistory) {
+            console.log("Loading chat history for plugin ID:", id);
+            chatHistoryLoaded(Providers.loadChatHistory());
+        }
+
+        return true;
     }
 }

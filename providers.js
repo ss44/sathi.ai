@@ -13,10 +13,26 @@ var modelKey = "";
 var masterHistory = []; 
 var systemPrompt = "";
 var maxHistory = 20;
+var persistChatHistory = false;
+
+// Required for saving and loading data.
+var pluginId = "";
+var pluginService = null;
 
 function setMaxHistory(max) {
     console.log("Setting max history to: " + max);
     maxHistory = max;
+}
+
+function setPersistChatHistory(enabled) {
+    console.log("Setting persistChatHistory to: " + enabled);
+
+    // We should clear our messages!
+    if (!enabled) {
+        pluginService.savePluginData(pluginId, "chatHistory", null);
+    }
+
+    persistChatHistory = enabled;
 }
 
 function setGeminiApiKey(key) {
@@ -158,6 +174,9 @@ function sendMessage(text, callback) {
     // Enforce limit
     pruneHistory();
     
+    // Save history
+    saveChatHistory();
+
     console.log("Sending chat. History length: " + masterHistory.length + ". Provider " + currentModel().provider);
 
     getProvider().setModel(currentModel().name);
@@ -166,10 +185,58 @@ function sendMessage(text, callback) {
         if (response) {
             masterHistory.push({ role: "model", content: response });
             pruneHistory();
+            saveChatHistory();
              console.log("Chat response received. Total history: " + masterHistory.length);
         }
         callback(response, error);
     });
+}
+
+function saveChatHistory() {
+    if (!persistChatHistory) {
+        return false
+    }
+
+    if (!pluginService) {
+        return false;  
+    }
+
+    console.log("Saving chat history. Length: " + masterHistory.length);
+    var chatHistory = JSON.stringify(masterHistory);
+
+    // Save chat history
+    pluginService.savePluginData(pluginId, "chatHistory", chatHistory)
+    return true;
+}
+
+function loadChatHistory() {
+    console.log("Attempting to load chat history.");
+    if (!persistChatHistory) {
+        return []
+    }
+
+    if (!pluginService) {
+        return [];  
+    }
+
+    var chatHistory = pluginService.loadPluginData(pluginId, "chatHistory");
+    
+    if (chatHistory) {
+        try {
+            masterHistory = JSON.parse(chatHistory);
+            console.info("Chat history loaded. Length: " + masterHistory.length);
+        } catch (e) {
+            console.error("Error parsing chat history: " + e);
+            masterHistory = []; ;
+        }
+    }
+
+    return masterHistory;
+}
+
+function setPluginIdAndService(id, service) {
+    pluginId = id;
+    pluginService = service;
 }
 
 function isModelLoaded(modelName) {

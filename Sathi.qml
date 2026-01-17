@@ -19,6 +19,17 @@ PluginComponent {
     property string pendingInputText: ""
     property string resizeCorner: pluginData.resizeCorner || "right"
 
+    /**
+        We need to assign these variables to the backendChat but can't 
+        gurantee when they loaded other than by applying a watcher. 
+    **/
+    onPluginIdChanged: {
+        backendChat.setPluginIdAndService(pluginId, pluginService);
+    }  
+
+    onPluginServiceChanged: {
+        backendChat.setPluginIdAndService(pluginId, pluginService);
+    }
 
     horizontalBarPill: Component {
         Row {
@@ -66,12 +77,14 @@ PluginComponent {
         geminiApiKey: pluginData.geminiApiKey || ""
         openaiApiKey: pluginData.openaiApiKey || ""
         ollamaUrl: pluginData.ollamaUrl || ""
+        persistChatHistory: pluginData.persistChatHistory || false
         model: root.aiModel
         useGrounding: root.useGrounding
         systemPrompt: root.systemPrompt
         maxHistory: pluginData.maxMessageHistory || 20
 
         onNewMessage: (text, isError) => {
+            console.log("Received new message from backend:", text, "isError:", isError);
             root.isLoading = false;
             // Remove the thinking bubble if it exists
             if (chatModel.count > 0) {
@@ -86,6 +99,20 @@ PluginComponent {
                 "shouldAnimate": true,
                 "isThinking": false
             });
+            root.pruneUiHistory();
+        }
+
+        onChatHistoryLoaded: (chatHistory) => {
+            console.log("onChat history loaded:", chatHistory);
+            for (var i = 0; i < chatHistory.length; i++) {
+                var message = chatHistory[i];
+                chatModel.append({
+                    "text": message.content,
+                    "isUser": message.role == "user",
+                    "shouldAnimate": false,
+                    "isThinking": false
+                });
+            }
             root.pruneUiHistory();
         }
     }

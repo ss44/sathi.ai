@@ -66,4 +66,11 @@ PluginSettings {
         minimum: 2
         maximum: 100
     }
+
+    ToggleSetting {
+        settingKey: "persistChatHistory"
+        label: "Persist Chat History across Sessions"
+        description: "Enable or disable persistence of chat history across sessions."
+        defaultValue: false
+    }
 }
