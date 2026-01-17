@@ -232,4 +232,41 @@ DankRectangle {
         font.pixelSize: Theme.fontSizeSmall
         color: Theme.surfaceVariantText
     }
+
+    // An invisible TextEdit to help with copying text to clipboard
+    // By updating its contents and using the selectAll + copy methods we can
+    // copy text to clipboard easily..
+    TextEdit {
+        id: copyHelper
+        visible: false
+    }
+
+    HoverHandler {
+        id: bubbleHover
+    }
+
+    DankActionButton {
+        anchors.top: parent.top
+        anchors.right: parent.right
+        anchors.margins: Theme.spacingXS
+        
+        visible: bubbleHover.hovered && !root.isThinking
+        
+        iconName: "content_copy"
+        buttonSize: 32
+        iconSize: 18
+        
+        // Yes, this seems a bit hacky but the alternative recommended way
+        // seems to be to run a shell command to copy to clipboard which IMO seems just as convoluted.
+        // The text copied retains the general markdown formatting (like new lines) when pasted into rich text fields.
+        // Also seems to let QT deal with platform differences internally..
+        //
+        // It still appears in our clipboard history so this works well enough.
+        // https://danklinux.com/docs/dankmaterialshell/plugin-development#copying-to-clipboard
+        onClicked: {
+            copyHelper.text = root.text
+            copyHelper.selectAll()
+            copyHelper.copy()
+        }
+    }
 }
