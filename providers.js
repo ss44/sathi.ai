@@ -194,7 +194,7 @@ function sendMessage(text, callback) {
 
 function saveChatHistory() {
     if (!persistChatHistory) {
-        return false
+        return false;
     }
 
     if (!pluginService) {
