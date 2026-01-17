@@ -85,7 +85,5 @@ Item {
         // we only want to try it the once at load which is the only time
         // these variables should get set.
         internal.tryToLoadChat = false;
-
-        return;
     }
 }
