@@ -30,8 +30,10 @@ DankRectangle {
         for (var i = 0; i < parts.length; i++) {
             var part = parts[i];
             if (i % 2 === 0) {
-                // Text block
-                if (part.length > 0) newBlocks.push({ type: "text", content: part });
+                // For now this preserves newlines but doens't deal with multiple new lines well.
+                // Complicating this block to further handle new lines seems not worth the effort of just
+                // much it mucks up the code. So we just replace single newlines with markdown line breaks.
+                if (part.length > 0) newBlocks.push({ type: "text", content: part.replace(/\n/g, "  \n") });
             } else {
                 // Code block
                 var newlineIndex = part.indexOf("\n");
@@ -139,7 +141,7 @@ DankRectangle {
         TextEdit {
             id: msgText
             visible: !root.useRichView
-            text: root.isThinking ? root.currentThinkingPhrase : root.displayedText
+            text: root.isThinking ? root.currentThinkingPhrase : root.displayedText.replace(/\n/g, "  \n")
             textFormat: TextEdit.MarkdownText
             readOnly: true
             selectByMouse: true
