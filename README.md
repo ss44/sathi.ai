@@ -64,6 +64,9 @@ https://github.com/user-attachments/assets/0e90c1ff-e7d1-4b15-98a0-434727c99665
 ## Sceenshots
 - <img width="1386" height="938" alt="sathi-ai" src="https://github.com/user-attachments/assets/9721effc-c5e0-4269-8170-a4e0b8a95d02" />
 
+## Attributions
+<a href="https://www.flaticon.com/free-icons/sparkle" title="sparkle icons">Sparkle icons created by Muhammad_Usman - Flaticon</a>
+
 ## License
 
 [MIT](LICENSE)
