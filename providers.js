@@ -193,12 +193,8 @@ function sendMessage(text, callback) {
 }
 
 function saveChatHistory() {
-    if (!persistChatHistory) {
-        return false;
-    }
-
-    if (!pluginService) {
-        return false;  
+    if (!persistChatHistory || !pluginService) {
+        return;
     }
 
     console.log("Saving chat history. Length: " + masterHistory.length);
@@ -206,17 +202,16 @@ function saveChatHistory() {
 
     // Save chat history
     pluginService.savePluginData(pluginId, "chatHistory", chatHistory)
-    return true;
 }
 
 function loadChatHistory() {
     console.log("Attempting to load chat history.");
-    if (!persistChatHistory) {
-        return []
+    if (!persistChatHistory || !pluginService) {
+        return [];
     }
 
-    if (!pluginService) {
-        return [];  
+    if (masterHistory.length > 0) {
+        throw new Error("Chat history already loaded");
     }
 
     var chatHistory = pluginService.loadPluginData(pluginId, "chatHistory");
@@ -227,7 +222,7 @@ function loadChatHistory() {
             console.info("Chat history loaded. Length: " + masterHistory.length);
         } catch (e) {
             console.error("Error parsing chat history: " + e);
-            masterHistory = []; ;
+            masterHistory = [];
         }
     }
 

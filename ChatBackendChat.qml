@@ -19,6 +19,12 @@ Item {
     signal newMessage(string text, bool isError)
     signal chatHistoryLoaded(var chatHistory)
 
+    // We only ever want to try and load chat once.
+    QtObject {
+        id: internal
+        property bool tryToLoadChat: true
+    }
+    
     onGeminiApiKeyChanged: {
         Providers.setGeminiApiKey(geminiApiKey);
     }
@@ -65,16 +71,21 @@ Item {
 
     function setPluginIdAndService(id, service) {
         if (!id || !service) {
-            return false;
+            return;
         }
 
         Providers.setPluginIdAndService(id, service);
 
-        if (persistChatHistory) {
+        if (persistChatHistory && internal.tryToLoadChat) {
             console.log("Loading chat history for plugin ID:", id);
             chatHistoryLoaded(Providers.loadChatHistory());
         }
 
-        return true;
+        // Regardless of if we loaded or not based on there persistChatHistory setting,
+        // we only want to try it the once at load which is the only time
+        // these variables should get set.
+        internal.tryToLoadChat = false;
+
+        return;
     }
 }
