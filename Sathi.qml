@@ -92,7 +92,7 @@ PluginComponent {
             return
         }
 
-        console.log("Showing hidden message notification:", message)
+        console.debug("Showing hidden message notification:", message)
         hiddenNotificationProcess.message = message
         hiddenNotificationProcess.running = true
     }
