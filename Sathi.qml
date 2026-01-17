@@ -18,24 +18,6 @@ PluginComponent {
     property string systemPrompt: pluginData.systemPrompt || "You are a helpful assistant. Answer concisely. The chat client you are running in is small so keep answers brief. For context the current date is " + (new Date()).toDateString() + "." 
     property string pendingInputText: ""
     property string resizeCorner: pluginData.resizeCorner || "right"
-    
-    /**
-        We need to assign these variables to the backendChat but can't 
-        gurantee when they loaded other than by applying a watcher. 
-    **/
-    onPluginIdChanged: {
-        initializeChatBackend();
-    }  
-
-    onPluginServiceChanged: {
-        initializeChatBackend();
-    }
-
-    function initializeChatBackend() {
-        if (!pluginId || !pluginService) return;
-        
-        backendChat.setPluginIdAndService(pluginId, pluginService);
-    }
 
     horizontalBarPill: Component {
         Row {
@@ -83,11 +65,15 @@ PluginComponent {
         geminiApiKey: pluginData.geminiApiKey || ""
         openaiApiKey: pluginData.openaiApiKey || ""
         ollamaUrl: pluginData.ollamaUrl || ""
-        persistChatHistory: pluginData.persistChatHistory || false
+        persistChatHistory: pluginData.persistChatHistory
+
         model: root.aiModel
         useGrounding: root.useGrounding
         systemPrompt: root.systemPrompt
         maxHistory: pluginData.maxMessageHistory || 20
+
+        pluginId: root.pluginId
+        pluginService: root.pluginService
 
         onNewMessage: (text, isError) => {
             root.isLoading = false;

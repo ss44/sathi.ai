@@ -14,7 +14,10 @@ Item {
     property string model: ""
     property bool useGrounding: false
     property string systemPrompt: ""
+
     property bool persistChatHistory: false
+    property string pluginId
+    property var pluginService
 
     signal newMessage(string text, bool isError)
     signal chatHistoryLoaded(var chatHistory)
@@ -43,6 +46,7 @@ Item {
 
     onPersistChatHistoryChanged: {
         Providers.setPersistChatHistory(persistChatHistory);
+        tryToLoadChatHistory();       
     }
 
     onModelChanged: {
@@ -69,20 +73,35 @@ Item {
         });
     }
 
-    function setPluginIdAndService(id, service) {
-        if (!id || !service) {
-            return;
+    onPluginIdChanged: {
+        Providers.setPluginId(pluginId);
+        tryToLoadChatHistory()
+    }
+
+    onPluginServiceChanged: {
+        Providers.setPluginService(pluginService);
+        tryToLoadChatHistory()
+    }
+
+    /**
+     * Attempt to load chat history if we have access to:
+     *  - pluginId is set.
+     *  - pluginService is set
+     *  - persistChatHistory is enabled
+     *  - and we haven't attempted to already load chat history previosly.
+     **/
+    
+    function tryToLoadChatHistory() {
+        console.debug("Trying to load chat history...", pluginId, pluginService, persistChatHistory, internal.tryToLoadChat);
+
+        if (!pluginId || !pluginService || !persistChatHistory || !internal.tryToLoadChat) {
+            return
         }
 
-        Providers.setPluginIdAndService(id, service);
-
-        if (persistChatHistory && internal.tryToLoadChat) {
-            console.debug("Loading chat history for plugin ID:", id);
-            try {
-                chatHistoryLoaded(Providers.loadChatHistory());
-            } catch (e) {
-                console.error("Error loading chat history: " + e);
-            }
+        try {
+            chatHistoryLoaded(Providers.loadChatHistory());
+        } catch (e) {
+            console.error("Error loading chat history: " + e);
         }
 
         // Regardless of if we loaded or not based on the persistChatHistory setting,

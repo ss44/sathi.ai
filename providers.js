@@ -27,13 +27,21 @@ function setMaxHistory(max) {
 function setPersistChatHistory(enabled) {
     console.log("Setting persistChatHistory to: " + enabled);
 
-    // We should clear our messages!
-    if (!enabled) {
-        pluginService.savePluginData(pluginId, "chatHistory", null);
-    }
-
     persistChatHistory = enabled;
+    
+    // We should clear our messages if we've been turned off and save them if we've been turned on.
+    enabled ? saveChatHistory() :clearSavedChatHistory();
 }
+
+function clearSavedChatHistory() {
+    if (!pluginService || !pluginId) {
+        return;
+    }
+    
+    console.log("Clearing saved chat history.");
+    pluginService.savePluginData(pluginId, "chatHistory", null);
+}
+
 
 function setGeminiApiKey(key) {
     geminiKey = key;
@@ -202,7 +210,7 @@ function sendMessage(text, callback) {
  * @returns {void}
  */
 function saveChatHistory() {
-    if (!persistChatHistory || !pluginService) {
+    if (!persistChatHistory || !pluginService || !pluginId) {
         return;
     }
 
@@ -255,8 +263,11 @@ function loadChatHistory() {
     return masterHistory;
 }
 
-function setPluginIdAndService(id, service) {
+function setPluginId(id) {
     pluginId = id;
+}
+
+function setPluginService(service) {
     pluginService = service;
 }
 
