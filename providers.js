@@ -192,6 +192,15 @@ function sendMessage(text, callback) {
     });
 }
 
+/**
+ * Saves the current chat history to persistent storage.
+ * 
+ * This function serializes the masterHistory array to JSON and saves it using the
+ * plugin service. The save operation only occurs if chat history persistence is
+ * enabled (persistChatHistory is true) and the plugin service is available.
+ * 
+ * @returns {void} No return value. Exits early if persistence is disabled or plugin service is unavailable.
+ */
 function saveChatHistory() {
     if (!persistChatHistory || !pluginService) {
         return;
@@ -204,6 +213,22 @@ function saveChatHistory() {
     pluginService.savePluginData(pluginId, "chatHistory", chatHistory);
 }
 
+/**
+ * Loads previously saved chat history from persistent storage.
+ * 
+ * This function retrieves chat history from the plugin service and deserializes it
+ * from JSON into the masterHistory array. The function includes safeguards to:
+ * - Return an empty array if persistence is disabled or plugin service is unavailable
+ * - Skip reloading if masterHistory already contains messages
+ * - Handle JSON parsing errors gracefully by resetting to an empty array
+ * 
+ * @returns {Array} The loaded chat history array. Returns an empty array if:
+ *   - Chat history persistence is disabled (persistChatHistory is false)
+ *   - Plugin service is not available
+ *   - History is already loaded (masterHistory.length > 0)
+ *   - No saved history exists
+ *   - JSON parsing fails
+ */
 function loadChatHistory() {
     console.log("Attempting to load chat history.");
     if (!persistChatHistory || !pluginService) {
