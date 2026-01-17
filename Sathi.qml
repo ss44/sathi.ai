@@ -84,7 +84,6 @@ PluginComponent {
         maxHistory: pluginData.maxMessageHistory || 20
 
         onNewMessage: (text, isError) => {
-            console.log("Received new message from backend:", text, "isError:", isError);
             root.isLoading = false;
             // Remove the thinking bubble if it exists
             if (chatModel.count > 0) {
