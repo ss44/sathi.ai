@@ -201,7 +201,7 @@ function saveChatHistory() {
     var chatHistory = JSON.stringify(masterHistory);
 
     // Save chat history
-    pluginService.savePluginData(pluginId, "chatHistory", chatHistory)
+    pluginService.savePluginData(pluginId, "chatHistory", chatHistory);
 }
 
 function loadChatHistory() {
