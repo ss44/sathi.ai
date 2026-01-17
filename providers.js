@@ -201,7 +201,7 @@ function saveChatHistory() {
     var chatHistory = JSON.stringify(masterHistory);
 
     // Save chat history
-    pluginService.savePluginData(pluginId, "chatHistory", chatHistory)
+    pluginService.savePluginData(pluginId, "chatHistory", chatHistory);
 }
 
 function loadChatHistory() {
@@ -211,7 +211,8 @@ function loadChatHistory() {
     }
 
     if (masterHistory.length > 0) {
-        throw new Error("Chat history already loaded");
+        console.warn("Chat history already loaded, skipping reload.");
+        return masterHistory;
     }
 
     var chatHistory = pluginService.loadPluginData(pluginId, "chatHistory");
