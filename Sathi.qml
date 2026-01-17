@@ -194,11 +194,8 @@ PluginComponent {
 
             onVisibleChanged: {
                 if (visible) {
-                    console.debug("PopoutComponent visible");
                     chatInput.forceActiveFocus();
                     chatInput.cursorPosition = chatInput.length;
-                } else {
-                    console.debug("PopoutComponent hidden");
                 }
 
                 internalProps.isPopoutVisible = visible;
