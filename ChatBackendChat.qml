@@ -4,12 +4,13 @@ import "providers.js" as Providers
 
 Item {
     id: root
-    
+
     property string geminiApiKey: ""
     property string openaiApiKey: ""
     property string ollamaUrl: ""
+    property string lmstudioUrl: ""
     property int maxHistory: 20
-    
+
     property bool running: false
     property string model: ""
     property bool useGrounding: false
@@ -27,17 +28,21 @@ Item {
         id: internal
         property bool tryToLoadChat: true
     }
-    
+
     onGeminiApiKeyChanged: {
         Providers.setGeminiApiKey(geminiApiKey);
     }
-    
+
     onOpenaiApiKeyChanged: {
         Providers.setOpenaiApiKey(openaiApiKey);
     }
 
     onOllamaUrlChanged: {
         Providers.setOllamaUrl(ollamaUrl);
+    }
+
+    onLmstudioUrlChanged: {
+        Providers.setLMStudioUrl(lmstudioUrl);
     }
     
     onMaxHistoryChanged: {

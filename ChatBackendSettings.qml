@@ -6,7 +6,8 @@ Item {
     property string geminiApiKey: ""
     property string openaiApiKey: ""
     property string ollamaUrl: ""
-    
+    property string lmstudioUrl: ""
+
     // signal newMessage(string text, bool isError)
     signal newModels(string modelData)
 
@@ -23,6 +24,11 @@ Item {
     onOpenaiApiKeyChanged: {
         Providers.setOpenaiApiKey(openaiApiKey);
         Providers.getOpenaiModels(processModels);
+    }
+
+    onLmstudioUrlChanged: {
+        Providers.setLMStudioUrl(lmstudioUrl);
+        Providers.getLMStudioModels(processModels);
     }
 
     function processModels (models, error) {

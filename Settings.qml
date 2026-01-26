@@ -40,6 +40,14 @@ PluginSettings {
     }
 
     StringSetting {
+        settingKey: "lmstudioUrl"
+        label: "LM Studio URL"
+        description: "URL for your local LM Studio instance (e.g. http://localhost:1234)"
+        placeholder: "http://localhost:1234"
+        defaultValue: ""
+    }
+
+    StringSetting {
         settingKey: "systemPrompt"
         label: "System Prompt"
         description: "Initial instruction given to the AI to define its behavior."

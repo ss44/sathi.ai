@@ -2,10 +2,12 @@
 .import "gemini.js" as Gemini
 .import "ollama.js" as Ollama
 .import "openai.js" as OpenAI
+.import "lmstudio.js" as LMStudio
 
 var ollamaUrl = "";
 var geminiKey = "";
 var openaiKey = "";
+var lmstudioUrl = "";
 var loadedModels = {};
 var modelKey = "";
 
@@ -58,6 +60,11 @@ function setOllamaUrl(url) {
     Ollama.setBaseUrl(url);
 }
 
+function setLMStudioUrl(url) {
+    lmstudioUrl = url;
+    LMStudio.setBaseUrl(url);
+}
+
 function getOllamaModels(callback) {
     console.log("Fetching Ollama models from URL: " + ollamaUrl);
     Ollama.listModels((models, error) => {
@@ -75,6 +82,13 @@ function getGeminiModels(callback) {
 function getOpenaiModels(callback) {
     console.log("Fetching OpenAI models...");
     OpenAI.listModels((models, error) => {
+        processModels(models, callback, error);
+    });
+}
+
+function getLMStudioModels(callback) {
+    console.log("Fetching LM Studio models from URL: " + lmstudioUrl);
+    LMStudio.listModels((models, error) => {
         processModels(models, callback, error);
     });
 }
@@ -142,8 +156,10 @@ function getProvider() {
         return Gemini
     } else if (model.provider === "openai") {
         return OpenAI
+    } else if (model.provider === "lmstudio") {
+        return LMStudio
     }
-    
+
     throw new Error("Unknown provider: " + model.provider);
 }
 
