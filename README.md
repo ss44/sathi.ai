@@ -39,7 +39,7 @@ https://github.com/user-attachments/assets/0e90c1ff-e7d1-4b15-98a0-434727c99665
    - **Google Gemini**: Enter your API Key from [Google AI Studio](https://aistudio.google.com/).
    - **OpenAI**: Enter your API Key from [OpenAI Platform](https://platform.openai.com/api-keys).
    - **Ollama**: Enter your local server URL (default: `http://localhost:11434`).
-   - **LMStudio**: Enter your API Key from [LM Studio](http://localhost:1234). Uses the OpenAI API format.
+   - **LMStudio**: Enter your local LMStudio server URL (default: `http://localhost:1234`). Uses the OpenAI API format.
 4. (Optional) Set a custom **System Prompt** to define the AI's persona.
 
 ## 3. Usage
