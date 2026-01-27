@@ -11,7 +11,8 @@ https://github.com/user-attachments/assets/0e90c1ff-e7d1-4b15-98a0-434727c99665
 - 🎨 **Markdown Support**: Chat bubbles support markdown formatting and clickable links.
 - 🛠️ **Configurable**: Set your API keys and endpoints directly in settings.
 
-## Limitations 
+## Limitations
+
 - Limited context to the last _x,y_ messages that can be set. (Running a dameon or service or even a process could work around this but complicates install and use.)
 - When listing models right now we get all available models offered by a service - many of which may not be useful. Users will need some idea of the model they want to use.
 - Sessions are cleared when logging out and not saved.
@@ -24,11 +25,11 @@ https://github.com/user-attachments/assets/0e90c1ff-e7d1-4b15-98a0-434727c99665
 - A supported AI Provider ([Ollama](https://ollama.com), [Gemini](https://aistudio.google.com/) or [OpenAI](https://platform.openai.com))
 
 ### 1. Install Plugin Dependencies
+
 - Install the plugin to your plugins directory (`~/.config/DankMaterialShell/plugins`) by default.
 - Enable the plugin in the plugins screen.
-- Add the widget to your widgets tab. 
+- Add the widget to your widgets tab.
 - (Optional) - add a shortcut key to open the plugin ie in niri/config.kdl you can add something like: `Mod+Shift+Space { spawn-sh "dms ipc call widget toggle sathiAi"; }`
-
 
 ### 2. Configuration
 
@@ -38,6 +39,7 @@ https://github.com/user-attachments/assets/0e90c1ff-e7d1-4b15-98a0-434727c99665
    - **Google Gemini**: Enter your API Key from [Google AI Studio](https://aistudio.google.com/).
    - **OpenAI**: Enter your API Key from [OpenAI Platform](https://platform.openai.com/api-keys).
    - **Ollama**: Enter your local server URL (default: `http://localhost:11434`).
+   - **LMStudio**: Enter your API Key from [LM Studio](http://localhost:1234). Uses the OpenAI API format.
 4. (Optional) Set a custom **System Prompt** to define the AI's persona.
 
 ## 3. Usage
@@ -53,18 +55,22 @@ https://github.com/user-attachments/assets/0e90c1ff-e7d1-4b15-98a0-434727c99665
   - Check the `dms` logs (`DMS_LOG_LEVEL=debug dms run`) for more details.
 
 ## Motivation
+
 - Dank Matter Shell is dope as hell. Actually made me like my desktop.
 - Niri is amazing it made me want to use my laptop.
 - I find Ai convenient but all the ai clients i tried just didn't fit with my new found niri flow.
 - DMS plugin system was easy to work with and i wanted to learn and try something.
 
 ## Ai Disclosure
+
 - While I take pride in writing a chunk of the code by hand and resolving logic that the AI just couldn't get right, I also used AI to do a bunch of tedious, monotonous tasks, which in my opinion is the perfect use of it.
 
 ## Sceenshots
+
 - <img width="1386" height="938" alt="sathi-ai" src="https://github.com/user-attachments/assets/9721effc-c5e0-4269-8170-a4e0b8a95d02" />
 
 ## Attributions
+
 <a href="https://www.flaticon.com/free-icons/sparkle" title="sparkle icons">Sparkle icons created by Muhammad_Usman - Flaticon</a>
 
 ## License
