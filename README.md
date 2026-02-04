@@ -7,7 +7,7 @@ https://github.com/user-attachments/assets/0e90c1ff-e7d1-4b15-98a0-434727c99665
 ## Features
 
 - 💬 **Desktop Chat Interface**: Talk to AI without opening a browser.
-- ⚡ **Multi-Provider Support**: Supports **Google Gemini**, **OpenAI**, and local (or remote?) **Ollama** models.
+- ⚡ **Multi-Provider Support**: Supports **Google Gemini**, **OpenAI**,**Ollama**, **LMStudio** models.
 - 🎨 **Markdown Support**: Chat bubbles support markdown formatting and clickable links.
 - 🛠️ **Configurable**: Set your API keys and endpoints directly in settings.
 
@@ -22,7 +22,7 @@ https://github.com/user-attachments/assets/0e90c1ff-e7d1-4b15-98a0-434727c99665
 ### Prerequisites
 
 - Dank Material Shell
-- A supported AI Provider ([Ollama](https://ollama.com), [Gemini](https://aistudio.google.com/) or [OpenAI](https://platform.openai.com))
+- A supported AI Provider ([Ollama](https://ollama.com), [Gemini](https://aistudio.google.com/) or [OpenAI](https://platform.openai.com), [LMStudio](https://lmstudio.ai/))
 
 ### 1. Install Plugin Dependencies
 
