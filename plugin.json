@@ -7,6 +7,6 @@
   "icon": "widgets",
   "type": "widget",
   "component": "./Sathi.qml",
-  "settings": "./Settings.qml",
+  "settings": "./components/Settings.qml",
   "permissions": ["settings_read", "settings_write", "network"]
 }

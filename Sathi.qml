@@ -9,6 +9,8 @@ import qs.Widgets
 import qs.Modules.Plugins
 import qs.Modals.Common
 
+import "components"
+
 PluginComponent {
     id: root
 

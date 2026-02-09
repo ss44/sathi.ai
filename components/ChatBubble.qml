@@ -3,7 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import qs.Common 
 import qs.Widgets
-import "ThinkingPhrases.js" as ThinkingPhrases
+import "../providers/ThinkingPhrases.js" as ThinkingPhrases
 
 
 DankRectangle {

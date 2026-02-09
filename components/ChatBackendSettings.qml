@@ -1,5 +1,5 @@
 import QtQuick
-import "providers.js" as Providers
+import "../providers/providers.js" as Providers
 
 Item {
     id: root

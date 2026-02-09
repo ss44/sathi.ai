@@ -1,4 +1,4 @@
 module Sathi
-ChatBubble 1.0 ChatBubble.qml
-ChatInput 1.0 ChatInput.qml
+ChatBubble 1.0 components/ChatBubble.qml
+ChatInput 1.0 components/ChatInput.qml
 ChatBackend 1.0 ChatBackend.qml

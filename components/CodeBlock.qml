@@ -3,7 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import qs.Common 
 import qs.Widgets
-import "Syntax.js" as Syntax
+import "../providers/Syntax.js" as Syntax
 
 Rectangle {
     id: root
