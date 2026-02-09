@@ -16,6 +16,7 @@ DankRectangle {
     property string currentThinkingPhrase: "Thinking..."
     property var contentBlocks: []
     property bool useRichView: !typeWriterTimer.running && !root.isThinking && root.displayedText.length > 0
+    property real thinkingStartTime: 0
 
     onUseRichViewChanged: updateContentBlocks()
     onDisplayedTextChanged: if (useRichView) updateContentBlocks()
@@ -218,13 +219,18 @@ DankRectangle {
         interval: 100
         running: root.isThinking
         repeat: true
-        property int elapsed: 0
-        onTriggered: elapsed += 100
+        property real currentTime: Date.now()
+        onTriggered: currentTime = Date.now()
     }
 
     Text {
         visible: root.isThinking
-        text: (responseTimer.elapsed / 1000).toFixed(1) + "s"
+        text: {
+            if (root.thinkingStartTime > 0 && responseTimer.currentTime > 0) {
+                return ((responseTimer.currentTime - root.thinkingStartTime) / 1000).toFixed(1) + "s";
+            }
+            return "0.0s";
+        }
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         anchors.margins: Theme.spacingS

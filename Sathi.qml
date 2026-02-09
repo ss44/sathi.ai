@@ -127,7 +127,8 @@ PluginComponent {
                 "text": text,
                 "isUser": false,
                 "shouldAnimate": true,
-                "isThinking": false
+                "isThinking": false,
+                "thinkingStartTime": 0
             });
 
             root.pruneUiHistory();
@@ -143,7 +144,8 @@ PluginComponent {
                     "text": message.content,
                     "isUser": message.role === "user",
                     "shouldAnimate": false,
-                    "isThinking": false
+                    "isThinking": false,
+                    "thinkingStartTime": 0
                 });
             }
             root.pruneUiHistory();
@@ -179,11 +181,11 @@ PluginComponent {
     function processMessage(message) {
         if (message === "") return;
 
-        chatModel.append({ "text": message, "isUser": true, "shouldAnimate": false, "isThinking": false });
+        chatModel.append({ "text": message, "isUser": true, "shouldAnimate": false, "isThinking": false, "thinkingStartTime": 0 });
         root.pruneUiHistory();
         root.isLoading = true;
         
-        chatModel.append({ "text": "", "isUser": false, "shouldAnimate": true, "isThinking": true });
+        chatModel.append({ "text": "", "isUser": false, "shouldAnimate": true, "isThinking": true, "thinkingStartTime": Date.now() });
         backendChat.sendMessage(message);
     }
 
@@ -279,6 +281,7 @@ PluginComponent {
                                 isUser: model.isUser
                                 shouldAnimate: model.shouldAnimate
                                 isThinking: model.isThinking !== undefined ? model.isThinking : false
+                                thinkingStartTime: model.thinkingStartTime !== undefined ? model.thinkingStartTime : 0
                                 width: chatColumn.width - (chatColumn.padding * 2)
                                 onAnimationCompleted: model.shouldAnimate = false
                             }
