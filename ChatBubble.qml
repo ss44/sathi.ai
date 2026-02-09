@@ -219,7 +219,7 @@ DankRectangle {
         interval: 100
         running: root.isThinking
         repeat: true
-        property real currentTime: Date.now()
+        property real currentTime: 0
         onTriggered: currentTime = Date.now()
     }
 

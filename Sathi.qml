@@ -123,13 +123,7 @@ PluginComponent {
                      chatModel.remove(chatModel.count - 1);
                  }
             }
-            chatModel.append({
-                "text": text,
-                "isUser": false,
-                "shouldAnimate": true,
-                "isThinking": false,
-                "thinkingStartTime": 0
-            });
+            chatModel.append(createChatEntry(text, false, true, false));
 
             root.pruneUiHistory();
             
@@ -140,13 +134,12 @@ PluginComponent {
             console.debug("Chat history loaded:", chatHistory);
             for (var i = 0; i < chatHistory.length; i++) {
                 var message = chatHistory[i];
-                chatModel.append({
-                    "text": message.content,
-                    "isUser": message.role === "user",
-                    "shouldAnimate": false,
-                    "isThinking": false,
-                    "thinkingStartTime": 0
-                });
+                chatModel.append(createChatEntry(
+                    message.content,
+                    message.role === "user",
+                    false,
+                    false
+                ));
             }
             root.pruneUiHistory();
         }
@@ -178,14 +171,24 @@ PluginComponent {
         }
     }
 
+    function createChatEntry(text, isUser, shouldAnimate, isThinking) {
+        return {
+            "text": text,
+            "isUser": isUser,
+            "shouldAnimate": shouldAnimate,
+            "isThinking": isThinking,
+            "thinkingStartTime": isThinking ? Date.now() : 0
+        };
+    }
+
     function processMessage(message) {
         if (message === "") return;
 
-        chatModel.append({ "text": message, "isUser": true, "shouldAnimate": false, "isThinking": false, "thinkingStartTime": 0 });
+        chatModel.append(createChatEntry(message, true, false, false));
         root.pruneUiHistory();
         root.isLoading = true;
         
-        chatModel.append({ "text": "", "isUser": false, "shouldAnimate": true, "isThinking": true, "thinkingStartTime": Date.now() });
+        chatModel.append(createChatEntry("", false, true, true));
         backendChat.sendMessage(message);
     }
 
