@@ -34,7 +34,7 @@ PluginSettings {
     StringSetting {
         settingKey: "anthropicApiKey"
         label: "Anthropic API Key"
-        description: "Keys can be obtained from https://console.anthropic.com/settings/keys"
+        description: "Keys can be obtained from https://platform.claude.com/settings/keys"
         placeholder: "Enter API key"
         defaultValue: ""
     }

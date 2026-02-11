@@ -48,37 +48,28 @@ function request(method, url, callback, data) {
 }
 
 function listModels(callback) {
-    // Anthropic doesn't have a models list endpoint
-    // Return hardcoded list of available models
-    var models = [
-        {
-            "name": "claude-3-5-sonnet-20241022",
-            "display_name": "Claude 3.5 Sonnet",
-            "provider": "anthropic"
-        },
-        {
-            "name": "claude-3-5-haiku-20241022",
-            "display_name": "Claude 3.5 Haiku",
-            "provider": "anthropic"
-        },
-        {
-            "name": "claude-3-opus-20240229",
-            "display_name": "Claude 3 Opus",
-            "provider": "anthropic"
-        },
-        {
-            "name": "claude-3-sonnet-20240229",
-            "display_name": "Claude 3 Sonnet",
-            "provider": "anthropic"
-        },
-        {
-            "name": "claude-3-haiku-20240307",
-            "display_name": "Claude 3 Haiku",
-            "provider": "anthropic"
-        }
-    ];
+    var url = "https://api.anthropic.com/v1/models";
     
-    callback(models, null);
+    request("GET", url, function(response, error) {
+        if (error) {
+            callback(null, error);
+            return;
+        }
+
+        var models = [];
+        if (response.data) {
+            for (var i = 0; i < response.data.length; i++) {
+                var m = response.data[i];
+                var modelData = { 
+                    "name": m.id, 
+                    "display_name": m.display_name || m.id,
+                    "provider": "anthropic" 
+                };
+                models.push(modelData);
+            }
+        }
+        callback(models, null);
+    });
 }
 
 function sendChat(history, systemPrompt, callback) {
