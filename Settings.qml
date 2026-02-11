@@ -32,6 +32,14 @@ PluginSettings {
     }
 
     StringSetting {
+        settingKey: "anthropicApiKey"
+        label: "Anthropic API Key"
+        description: "Keys can be obtained from https://console.anthropic.com/settings/keys"
+        placeholder: "Enter API key"
+        defaultValue: ""
+    }
+
+    StringSetting {
         settingKey: "ollamaUrl"
         label: "Ollama URL"
         description: "URL for your local Ollama instance (e.g. http://localhost:11434)"

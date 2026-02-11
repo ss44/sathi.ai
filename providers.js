@@ -3,11 +3,13 @@
 .import "ollama.js" as Ollama
 .import "openai.js" as OpenAI
 .import "lmstudio.js" as LMStudio
+.import "anthropic.js" as Anthropic
 
 var ollamaUrl = "";
 var geminiKey = "";
 var openaiKey = "";
 var lmstudioUrl = "";
+var anthropicKey = "";
 var loadedModels = {};
 var modelKey = "";
 
@@ -71,6 +73,11 @@ function setLMStudioUrl(url) {
     LMStudio.setBaseUrl(url);
 }
 
+function setAnthropicApiKey(key) {
+    anthropicKey = key;
+    Anthropic.setApiKey(key);
+}
+
 function getOllamaModels(callback) {
     console.log("Fetching Ollama models from URL: " + ollamaUrl);
     Ollama.listModels((models, error) => {
@@ -95,6 +102,13 @@ function getOpenaiModels(callback) {
 function getLMStudioModels(callback) {
     console.log("Fetching LM Studio models from URL: " + lmstudioUrl);
     LMStudio.listModels((models, error) => {
+        processModels(models, callback, error);
+    });
+}
+
+function getAnthropicModels(callback) {
+    console.log("Fetching Anthropic models...");
+    Anthropic.listModels((models, error) => {
         processModels(models, callback, error);
     });
 }
@@ -164,6 +178,8 @@ function getProvider() {
         return OpenAI
     } else if (model.provider === "lmstudio") {
         return LMStudio
+    } else if (model.provider === "anthropic") {
+        return Anthropic
     }
 
     throw new Error("Unknown provider: " + model.provider);

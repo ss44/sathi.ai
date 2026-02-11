@@ -9,6 +9,7 @@ Item {
     property string openaiApiKey: ""
     property string ollamaUrl: ""
     property string lmstudioUrl: ""
+    property string anthropicApiKey: ""
     property int maxHistory: 20
 
     property bool running: false
@@ -43,6 +44,10 @@ Item {
 
     onLmstudioUrlChanged: {
         Providers.setLMStudioUrl(lmstudioUrl);
+    }
+
+    onAnthropicApiKeyChanged: {
+        Providers.setAnthropicApiKey(anthropicApiKey);
     }
     
     onMaxHistoryChanged: {
