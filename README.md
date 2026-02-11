@@ -13,7 +13,6 @@ https://github.com/user-attachments/assets/0e90c1ff-e7d1-4b15-98a0-434727c99665
 - 🛠️ **Configurable**: Set your API keys and endpoints directly in settings.
 - 📌 **Pin to Top**: Keep the chat visible while you work. You can still use other apps underneath it.
 - 🚀 **Instant-_ish_ Open**: Speedy window access to make it faster to access your conversations.
-- ad
 
 ## Limitations
 
