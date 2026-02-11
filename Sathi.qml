@@ -61,21 +61,17 @@ PluginComponent {
                 (child.hasOwnProperty("shouldBeVisible") && child.hasOwnProperty("backgroundInteractive"))
                ) {
                 root._popoutInstance = child;
+
+                // Prevents the popout from losing its content when hidden, which seems to be an issue with nested popouts or something related to the way PluginComponent manages its children.
+                if (root._popoutInstance.contentLoader) {
+                    try {
+                        root._popoutInstance.contentLoader.active = true;
+                        console.debug("Sathi: Forced popout content to stay active (nested)");
+                    } catch (e) { console.warn(e) }
+                }
+
                 console.debug("Sathi: Found popout instance via hack");
                 break;
-            } else if (child && child.hasOwnProperty("data")) {
-                 // Check one level deep just in case
-                 for (var j=0; j < child.data.length; j++) {
-                     var sub = child.data[j];
-                     if (sub && 
-                         sub.toString().indexOf("PluginPopout") !== -1 ||
-                         (sub.hasOwnProperty("shouldBeVisible") && sub.hasOwnProperty("backgroundInteractive"))) {
-                          root._popoutInstance = sub;
-                          console.debug("Sathi: Found popout instance via hack (nested)");
-                          break;
-                     }
-                 }
-                 if (root._popoutInstance) break;
             }
         }
     }
