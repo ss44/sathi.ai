@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Wayland
 import Quickshell.Widgets
 import Quickshell.Io
 
@@ -21,6 +22,63 @@ PluginComponent {
     property string systemPrompt: pluginData.systemPrompt || "You are a helpful assistant. Answer concisely. The chat client you are running in is small so keep answers brief. For context the current date is " + (new Date()).toDateString() + "." 
     property string pendingInputText: ""
     property string resizeCorner: pluginData.resizeCorner || "right"
+    property bool popoutSticky: false
+    // Hack to find the PluginPopout instance since it's an internal child of PluginComponent
+    // and we cannot modify PluginComponent source code.
+    property Item _popoutInstance: null
+    
+    Timer {
+        running: true
+        repeat: false
+        interval: 100
+        onTriggered: root.findPopoutInstance()
+    }
+
+    onPopoutStickyChanged: {
+        if (root._popoutInstance) {
+            // Setting backgroundInteractive to false disables the mouse area in the background window,
+            // effectively making the popout 'sticky' because background clicks are not caught.
+            root._popoutInstance.backgroundInteractive = !root.popoutSticky
+            
+            // Should release exclusive focus so we can interact with other windows
+            if (root.popoutSticky) {
+                root._popoutInstance.customKeyboardFocus = WlrKeyboardFocus.OnDemand;
+            } else {
+                root._popoutInstance.customKeyboardFocus = null;
+            }
+        }
+    }
+
+    function findPopoutInstance() {
+        if (root._popoutInstance) return;
+        
+        // Search through children for an object that looks like the PluginPopout
+        // It should have properties like 'shouldBeVisible', 'backgroundInteractive', 'pluginContent'
+        for (var i = 0; i < root.data.length; i++) {
+            var child = root.data[i];
+            if (child && 
+                child.toString().indexOf("PluginPopout") !== -1 ||
+                (child.hasOwnProperty("shouldBeVisible") && child.hasOwnProperty("backgroundInteractive"))
+               ) {
+                root._popoutInstance = child;
+                console.debug("Sathi: Found popout instance via hack");
+                break;
+            } else if (child && child.hasOwnProperty("data")) {
+                 // Check one level deep just in case
+                 for (var j=0; j < child.data.length; j++) {
+                     var sub = child.data[j];
+                     if (sub && 
+                         sub.toString().indexOf("PluginPopout") !== -1 ||
+                         (sub.hasOwnProperty("shouldBeVisible") && sub.hasOwnProperty("backgroundInteractive"))) {
+                          root._popoutInstance = sub;
+                          console.debug("Sathi: Found popout instance via hack (nested)");
+                          break;
+                     }
+                 }
+                 if (root._popoutInstance) break;
+            }
+        }
+    }
 
     horizontalBarPill: Component {
         Row {
@@ -198,7 +256,7 @@ PluginComponent {
         id: chatPopout
         PopoutComponent {
             id: popoutColumn
-            showCloseButton: true
+            showCloseButton: false
 
             onVisibleChanged: {
                 if (visible) {
@@ -374,7 +432,7 @@ PluginComponent {
                         
                         Row {
                             id: rowBottomRowActions
-                            width: Theme.fontSizeLarge * 2 + Theme.spacingS
+                            width: Theme.fontSizeLarge * 4 + Theme.spacingS
                             height: cbModelSelector.implicitHeight
 
                             anchors.verticalCenter: parent.verticalCenter
@@ -386,7 +444,7 @@ PluginComponent {
                                 anchors.top: parent.top
                                 anchors.margins: Theme.spacingXS
                                 
-                                visible: true
+                                visible: trueprimary
                                 
                                 iconName: "history_off"
                                 buttonSize: 32
@@ -413,13 +471,33 @@ PluginComponent {
                                     });
                                 }
                             }
+
+                            DankActionButton {
+                                anchors.top: parent.top
+                                anchors.margins: Theme.spacingXS
+                                
+                                visible: true
+                                
+                                iconName: "push_pin"
+                                buttonSize: 32
+                                iconSize: 18
+
+                                iconColor: root.popoutSticky ? Theme.surfaceVariantText : Theme.surfaceText
+                                backgroundColor: root.popoutSticky ? Theme.surfaceVariant : "transparent"
+                                
+                                onClicked: () => {
+                                    root.popoutSticky = !root.popoutSticky;
+                                }
+                            }
+
+
                         }
                     }
 
                     StyledText {
                         visible: !root.isModelAvailable && root.aiModel !== "" && availableAisModel.count > 0
                         color: Theme.error
-                        font.pixelSize: Theme.fontSizeSmall
+                        font.pixelSize: Theme.fontSizeSmasurfaceVariantll
                         width: parent.width
                         horizontalAlignment: Text.AlignHCenter
                         wrapMode: Text.WordWrap
