@@ -8,8 +8,12 @@ https://github.com/user-attachments/assets/0e90c1ff-e7d1-4b15-98a0-434727c99665
 
 - 💬 **Desktop Chat Interface**: Talk to AI without opening a browser.
 - ⚡ **Multi-Provider Support**: Supports **Google Gemini**, **OpenAI**,**Ollama**, **LMStudio** models.
-- 🎨 **Markdown Support**: Chat bubbles support markdown formatting and clickable links.
+- 🎨 **Markdown Support**: Chat bubbles support markdown formatting, clickable links and copying to clipboard.
+- 🎭 **Context Control**: Allows **you** to set and specify context details for how you want the AI to behave.
 - 🛠️ **Configurable**: Set your API keys and endpoints directly in settings.
+- 📌 **Pin to Top**: Keep the chat visible while you work. You can still use other apps underneath it.
+- 🚀 **Instant-_ish_ Open**: Speedy window access to make it faster to access your conversations.
+- ad
 
 ## Limitations
 
