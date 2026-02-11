@@ -7,6 +7,7 @@ Item {
     property string openaiApiKey: ""
     property string ollamaUrl: ""
     property string lmstudioUrl: ""
+    property string anthropicApiKey: ""
 
     // signal newMessage(string text, bool isError)
     signal newModels(string modelData)
@@ -29,6 +30,11 @@ Item {
     onLmstudioUrlChanged: {
         Providers.setLMStudioUrl(lmstudioUrl);
         Providers.getLMStudioModels(processModels);
+    }
+
+    onAnthropicApiKeyChanged: {
+        Providers.setAnthropicApiKey(anthropicApiKey);
+        Providers.getAnthropicModels(processModels);
     }
 
     function processModels (models, error) {
