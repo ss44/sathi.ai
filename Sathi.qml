@@ -155,14 +155,9 @@ PluginComponent {
     ChatBackendChat {
         id: backendChat
         geminiApiKey: pluginData.geminiApiKey || ""
-        openaiApiKey: pluginData.openaiApiKey || ""
         anthropicApiKey: pluginData.anthropicApiKey || ""
         ollamaUrl: pluginData.ollamaUrl || ""
-        lmstudioUrl: pluginData.lmstudioUrl || ""
-        groqApiKey: pluginData.groqApiKey || ""
-        openrouterApiKey: pluginData.openrouterApiKey || ""
-        modalUrl: pluginData.modalUrl || ""
-        modalApiKey: pluginData.modalApiKey || ""
+        openaiProviders: pluginData.openaiProviders || "[]"
         persistChatHistory: pluginData.persistChatHistory
 
         model: root.aiModel
@@ -207,14 +202,9 @@ PluginComponent {
     ChatBackendSettings {
         id: backendSettings
         geminiApiKey: pluginData.geminiApiKey || ""
-        openaiApiKey: pluginData.openaiApiKey || ""
         anthropicApiKey: pluginData.anthropicApiKey || ""
         ollamaUrl: pluginData.ollamaUrl || ""
-        lmstudioUrl: pluginData.lmstudioUrl || ""
-        groqApiKey: pluginData.groqApiKey || ""
-        openrouterApiKey: pluginData.openrouterApiKey || ""
-        modalUrl: pluginData.modalUrl || ""
-        modalApiKey: pluginData.modalApiKey || ""
+        openaiProviders: pluginData.openaiProviders || "[]"
 
         onNewModels: (models, isError) => {
             try {

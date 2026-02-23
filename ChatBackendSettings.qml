@@ -4,14 +4,9 @@ import "providers.js" as Providers
 Item {
     id: root
     property string geminiApiKey: ""
-    property string openaiApiKey: ""
     property string ollamaUrl: ""
-    property string lmstudioUrl: ""
     property string anthropicApiKey: ""
-    property string groqApiKey: ""
-    property string openrouterApiKey: ""
-    property string modalUrl: ""
-    property string modalApiKey: ""
+    property string openaiProviders: "[]"
 
     // signal newMessage(string text, bool isError)
     signal newModels(string modelData)
@@ -26,41 +21,13 @@ Item {
         Providers.getGeminiModels(processModels);
     }
 
-    onOpenaiApiKeyChanged: {
-        Providers.setOpenaiApiKey(openaiApiKey);
-        Providers.getOpenaiModels(processModels);
-    }
-
-    onLmstudioUrlChanged: {
-        Providers.setLMStudioUrl(lmstudioUrl);
-        Providers.getLMStudioModels(processModels);
-    }
-
     onAnthropicApiKeyChanged: {
         Providers.setAnthropicApiKey(anthropicApiKey);
         Providers.getAnthropicModels(processModels);
     }
 
-    onGroqApiKeyChanged: {
-        Providers.setGroqApiKey(groqApiKey);
-        Providers.getGroqModels(processModels);
-    }
-
-    onOpenrouterApiKeyChanged: {
-        Providers.setOpenRouterApiKey(openrouterApiKey);
-        Providers.getOpenRouterModels(processModels);
-    }
-
-    onModalUrlChanged: {
-        Providers.setModalUrl(modalUrl);
-        Providers.getModalModels(processModels);
-    }
-
-    onModalApiKeyChanged: {
-        Providers.setModalApiKey(modalApiKey);
-        if (modalUrl) {
-            Providers.getModalModels(processModels);
-        }
+    onOpenaiProvidersChanged: {
+        Providers.setOpenAICompatibleProviders(openaiProviders, processModels);
     }
 
     function processModels (models, error) {

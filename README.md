@@ -7,7 +7,7 @@ https://github.com/user-attachments/assets/0e90c1ff-e7d1-4b15-98a0-434727c99665
 ## Features
 
 - 💬 **Desktop Chat Interface**: Talk to AI without opening a browser.
-- ⚡ **Multi-Provider Support**: Supports **Google Gemini**, **OpenAI**, **Anthropic**, **Groq**, **OpenRouter**, **Modal**, **Ollama**, **LMStudio** models.
+- ⚡ **Multi-Provider Support**: Supports **Google Gemini**, **Anthropic**, **Ollama**, and any **OpenAI-compatible** provider (OpenAI, Groq, OpenRouter, LM Studio, Modal, or custom endpoints).
 - 🎨 **Markdown Support**: Chat bubbles support markdown formatting, clickable links and copying to clipboard.
 - 🎭 **Context Control**: Allows **you** to set and specify context details for how you want the AI to behave.
 - 🛠️ **Configurable**: Set your API keys and endpoints directly in settings.
@@ -25,7 +25,7 @@ https://github.com/user-attachments/assets/0e90c1ff-e7d1-4b15-98a0-434727c99665
 ### Prerequisites
 
 - Dank Material Shell
-- A supported AI Provider ([Ollama](https://ollama.com), [Gemini](https://aistudio.google.com/), [OpenAI](https://platform.openai.com), [Anthropic](https://platform.claude.com), [LMStudio](https://lmstudio.ai/), [Groq](https://console.groq.com), [OpenRouter](https://openrouter.ai), [Modal](https://modal.com))
+- A supported AI Provider ([Gemini](https://aistudio.google.com/), [Anthropic](https://platform.claude.com), [Ollama](https://ollama.com), or any OpenAI-compatible API such as [OpenAI](https://platform.openai.com), [Groq](https://console.groq.com), [OpenRouter](https://openrouter.ai), [LM Studio](https://lmstudio.ai/), [Modal](https://modal.com))
 
 ### 1. Install Plugin Dependencies
 
@@ -40,13 +40,15 @@ https://github.com/user-attachments/assets/0e90c1ff-e7d1-4b15-98a0-434727c99665
 2. Open the **Sathi** settings page.
 3. Configure your AI providers:
    - **Google Gemini**: Enter your API Key from [Google AI Studio](https://aistudio.google.com/).
-   - **OpenAI**: Enter your API Key from [OpenAI Platform](https://platform.openai.com/api-keys).
    - **Anthropic**: Enter your API Key from [Claude Platform](https://platform.claude.com/settings/keys).
-   - **Groq**: Enter your API Key from [Groq Console](https://console.groq.com/keys). Provides fast inference for open-source models (e.g. Llama, Mixtral).
-   - **OpenRouter**: Enter your API Key from [OpenRouter](https://openrouter.ai/settings/keys). Routes requests to many providers including free/open-source models.
-   - **Modal**: Enter your Modal endpoint URL (e.g. `https://username--app-name.modal.run`) and optional API key for self-hosted models on Modal's serverless platform.
    - **Ollama**: Enter your local server URL (default: `http://localhost:11434`).
-   - **LMStudio**: Enter your local LMStudio server URL (default: `http://localhost:1234`). Uses the OpenAI API format.
+   - **OpenAI-Compatible Providers**: Use the dropdown to add any provider that uses the OpenAI API format:
+     - **OpenAI**: Enter your API Key from [OpenAI Platform](https://platform.openai.com/api-keys).
+     - **Groq**: Enter your API Key from [Groq Console](https://console.groq.com/keys). Fast inference for open-source models.
+     - **OpenRouter**: Enter your API Key from [OpenRouter](https://openrouter.ai/settings/keys). Routes to many providers.
+     - **LM Studio**: Enter your local URL (default: `http://localhost:1234/v1`).
+     - **Modal**: Enter your endpoint URL and optional API key.
+     - **Other**: Add any custom OpenAI-compatible endpoint by providing a URL and optional API key.
 4. (Optional) Set a custom **System Prompt** to define the AI's persona.
 
 ## 3. Usage
