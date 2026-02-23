@@ -4,12 +4,19 @@
 .import "openai.js" as OpenAI
 .import "lmstudio.js" as LMStudio
 .import "anthropic.js" as Anthropic
+.import "groq.js" as Groq
+.import "openrouter.js" as OpenRouter
+.import "modal.js" as Modal
 
 var ollamaUrl = "";
 var geminiKey = "";
 var openaiKey = "";
 var lmstudioUrl = "";
 var anthropicKey = "";
+var groqKey = "";
+var openrouterKey = "";
+var modalUrl = "";
+var modalKey = "";
 var loadedModels = {};
 var modelKey = "";
 
@@ -78,6 +85,26 @@ function setAnthropicApiKey(key) {
     Anthropic.setApiKey(key);
 }
 
+function setGroqApiKey(key) {
+    groqKey = key;
+    Groq.setApiKey(key);
+}
+
+function setOpenRouterApiKey(key) {
+    openrouterKey = key;
+    OpenRouter.setApiKey(key);
+}
+
+function setModalUrl(url) {
+    modalUrl = url;
+    Modal.setBaseUrl(url);
+}
+
+function setModalApiKey(key) {
+    modalKey = key;
+    Modal.setApiKey(key);
+}
+
 function getOllamaModels(callback) {
     console.log("Fetching Ollama models from URL: " + ollamaUrl);
     Ollama.listModels((models, error) => {
@@ -109,6 +136,27 @@ function getLMStudioModels(callback) {
 function getAnthropicModels(callback) {
     console.log("Fetching Anthropic models...");
     Anthropic.listModels((models, error) => {
+        processModels(models, callback, error);
+    });
+}
+
+function getGroqModels(callback) {
+    console.log("Fetching Groq models...");
+    Groq.listModels((models, error) => {
+        processModels(models, callback, error);
+    });
+}
+
+function getOpenRouterModels(callback) {
+    console.log("Fetching OpenRouter models...");
+    OpenRouter.listModels((models, error) => {
+        processModels(models, callback, error);
+    });
+}
+
+function getModalModels(callback) {
+    console.log("Fetching Modal models from URL: " + modalUrl);
+    Modal.listModels((models, error) => {
         processModels(models, callback, error);
     });
 }
@@ -180,6 +228,12 @@ function getProvider() {
         return LMStudio
     } else if (model.provider === "anthropic") {
         return Anthropic
+    } else if (model.provider === "groq") {
+        return Groq
+    } else if (model.provider === "openrouter") {
+        return OpenRouter
+    } else if (model.provider === "modal") {
+        return Modal
     }
 
     throw new Error("Unknown provider: " + model.provider);

@@ -40,6 +40,38 @@ PluginSettings {
     }
 
     StringSetting {
+        settingKey: "groqApiKey"
+        label: "Groq API Key"
+        description: "Keys can be obtained from https://console.groq.com/keys"
+        placeholder: "Enter API key"
+        defaultValue: ""
+    }
+
+    StringSetting {
+        settingKey: "openrouterApiKey"
+        label: "OpenRouter API Key"
+        description: "Keys can be obtained from https://openrouter.ai/settings/keys"
+        placeholder: "Enter API key"
+        defaultValue: ""
+    }
+
+    StringSetting {
+        settingKey: "modalUrl"
+        label: "Modal URL"
+        description: "URL for your Modal model endpoint (e.g. https://username--app-name.modal.run)"
+        placeholder: "https://username--app-name.modal.run"
+        defaultValue: ""
+    }
+
+    StringSetting {
+        settingKey: "modalApiKey"
+        label: "Modal API Key"
+        description: "API key for your Modal model endpoint (if required)"
+        placeholder: "Enter API key"
+        defaultValue: ""
+    }
+
+    StringSetting {
         settingKey: "ollamaUrl"
         label: "Ollama URL"
         description: "URL for your local Ollama instance (e.g. http://localhost:11434)"

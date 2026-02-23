@@ -8,6 +8,10 @@ Item {
     property string ollamaUrl: ""
     property string lmstudioUrl: ""
     property string anthropicApiKey: ""
+    property string groqApiKey: ""
+    property string openrouterApiKey: ""
+    property string modalUrl: ""
+    property string modalApiKey: ""
 
     // signal newMessage(string text, bool isError)
     signal newModels(string modelData)
@@ -35,6 +39,28 @@ Item {
     onAnthropicApiKeyChanged: {
         Providers.setAnthropicApiKey(anthropicApiKey);
         Providers.getAnthropicModels(processModels);
+    }
+
+    onGroqApiKeyChanged: {
+        Providers.setGroqApiKey(groqApiKey);
+        Providers.getGroqModels(processModels);
+    }
+
+    onOpenrouterApiKeyChanged: {
+        Providers.setOpenRouterApiKey(openrouterApiKey);
+        Providers.getOpenRouterModels(processModels);
+    }
+
+    onModalUrlChanged: {
+        Providers.setModalUrl(modalUrl);
+        Providers.getModalModels(processModels);
+    }
+
+    onModalApiKeyChanged: {
+        Providers.setModalApiKey(modalApiKey);
+        if (modalUrl) {
+            Providers.getModalModels(processModels);
+        }
     }
 
     function processModels (models, error) {

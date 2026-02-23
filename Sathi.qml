@@ -159,6 +159,10 @@ PluginComponent {
         anthropicApiKey: pluginData.anthropicApiKey || ""
         ollamaUrl: pluginData.ollamaUrl || ""
         lmstudioUrl: pluginData.lmstudioUrl || ""
+        groqApiKey: pluginData.groqApiKey || ""
+        openrouterApiKey: pluginData.openrouterApiKey || ""
+        modalUrl: pluginData.modalUrl || ""
+        modalApiKey: pluginData.modalApiKey || ""
         persistChatHistory: pluginData.persistChatHistory
 
         model: root.aiModel
@@ -207,6 +211,10 @@ PluginComponent {
         anthropicApiKey: pluginData.anthropicApiKey || ""
         ollamaUrl: pluginData.ollamaUrl || ""
         lmstudioUrl: pluginData.lmstudioUrl || ""
+        groqApiKey: pluginData.groqApiKey || ""
+        openrouterApiKey: pluginData.openrouterApiKey || ""
+        modalUrl: pluginData.modalUrl || ""
+        modalApiKey: pluginData.modalApiKey || ""
 
         onNewModels: (models, isError) => {
             try {

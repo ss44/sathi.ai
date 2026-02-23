@@ -10,6 +10,10 @@ Item {
     property string ollamaUrl: ""
     property string lmstudioUrl: ""
     property string anthropicApiKey: ""
+    property string groqApiKey: ""
+    property string openrouterApiKey: ""
+    property string modalUrl: ""
+    property string modalApiKey: ""
     property int maxHistory: 20
 
     property bool running: false
@@ -48,6 +52,22 @@ Item {
 
     onAnthropicApiKeyChanged: {
         Providers.setAnthropicApiKey(anthropicApiKey);
+    }
+
+    onGroqApiKeyChanged: {
+        Providers.setGroqApiKey(groqApiKey);
+    }
+
+    onOpenrouterApiKeyChanged: {
+        Providers.setOpenRouterApiKey(openrouterApiKey);
+    }
+
+    onModalUrlChanged: {
+        Providers.setModalUrl(modalUrl);
+    }
+
+    onModalApiKeyChanged: {
+        Providers.setModalApiKey(modalApiKey);
     }
     
     onMaxHistoryChanged: {
