@@ -602,4 +602,68 @@ PluginComponent {
 
     popoutWidth: pluginData.windowWidth || 400
     popoutHeight: pluginData.windowHeight || 500
+
+    // --- Migration: convert old per-provider keys to new openaiProviders JSON ---
+    // Runs once on startup. If legacy keys (openaiApiKey, lmstudioUrl) exist,
+    // they are merged into the openaiProviders JSON array and then removed so
+    // migration doesn't repeat.
+    Component.onCompleted: migrateOldProviderKeys()
+
+    function migrateOldProviderKeys() {
+        if (!pluginService || !pluginId) return;
+
+        var oldOpenaiKey = pluginData.openaiApiKey || "";
+        var oldLmstudioUrl = pluginData.lmstudioUrl || "";
+
+        if (!oldOpenaiKey && !oldLmstudioUrl) return;
+
+        console.log("Sathi: Migrating legacy provider keys to openaiProviders format");
+
+        // Load any existing openaiProviders entries (user may have added Groq etc. already)
+        var existing = [];
+        try {
+            existing = JSON.parse(pluginData.openaiProviders || "[]");
+        } catch (e) {
+            existing = [];
+        }
+
+        // Helper: check if a provider id already exists in the array
+        function hasProvider(arr, id) {
+            for (var i = 0; i < arr.length; i++) {
+                if (arr[i].id === id) return true;
+            }
+            return false;
+        }
+
+        var changed = false;
+
+        // Migrate openaiApiKey -> openai entry
+        if (oldOpenaiKey && !hasProvider(existing, "openai")) {
+            existing.push({ id: "openai", apiKey: oldOpenaiKey });
+            changed = true;
+            console.log("Sathi: Migrated openaiApiKey to openaiProviders");
+        }
+
+        // Migrate lmstudioUrl -> lmstudio entry
+        if (oldLmstudioUrl && !hasProvider(existing, "lmstudio")) {
+            existing.push({ id: "lmstudio", url: oldLmstudioUrl });
+            changed = true;
+            console.log("Sathi: Migrated lmstudioUrl to openaiProviders");
+        }
+
+        if (!changed) return;
+
+        // Save the merged config first, then remove old keys only on success
+        try {
+            pluginService.savePluginData(pluginId, "openaiProviders", JSON.stringify(existing));
+
+            // Remove old keys so we don't migrate again
+            if (oldOpenaiKey) pluginService.savePluginData(pluginId, "openaiApiKey", null);
+            if (oldLmstudioUrl) pluginService.savePluginData(pluginId, "lmstudioUrl", null);
+
+            console.log("Sathi: Migration complete. openaiProviders:", JSON.stringify(existing));
+        } catch (e) {
+            console.error("Sathi: Migration failed, old keys preserved:", e);
+        }
+    }
 }
