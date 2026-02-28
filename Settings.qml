@@ -3,6 +3,7 @@ import QtQuick.Controls
 import qs.Common
 import qs.Modules.Plugins
 import qs.Widgets
+import "providers.js" as Providers
 
 PluginSettings {
     id: root
@@ -48,15 +49,7 @@ PluginSettings {
         width: parent.width
         height: openaiSectionCol.height
 
-        property var presets: [
-            { id: "openai",     name: "OpenAI",      url: "https://api.openai.com/v1",     needsUrl: false, needsApiKey: true },
-            { id: "groq",       name: "Groq",        url: "https://api.groq.com/openai/v1", needsUrl: false, needsApiKey: true },
-            { id: "openrouter", name: "OpenRouter",   url: "https://openrouter.ai/api/v1",  needsUrl: false, needsApiKey: true },
-            { id: "lmstudio",   name: "LM Studio",   url: "http://localhost:1234/v1",       needsUrl: true,  needsApiKey: false },
-            { id: "modal",      name: "Modal",        url: "",                                needsUrl: true,  needsApiKey: true },
-            { id: "other",      name: "Other",        url: "",                                needsUrl: true,  needsApiKey: true }
-        ]
-
+        property var presets: Providers.getOpenAiPresets()
         property var presetNames: {
             var names = [];
             for (var i = 0; i < presets.length; i++) names.push(presets[i].name);
@@ -65,16 +58,24 @@ PluginSettings {
 
         ListModel { id: providerListModel }
 
-        Timer {
-            interval: 200
-            running: true
-            repeat: false
-            onTriggered: openaiProviderSection.loadFromSetting()
+        Connections {
+            target: openaiProvidersData
+            function onIsInitializedChanged() {
+                if (openaiProvidersData.isInitialized) {
+                     openaiProviderSection.loadFromSetting();
+                }
+            }
+        }
+
+        Component.onCompleted: {
+             if (openaiProvidersData.isInitialized) {
+                 openaiProviderSection.loadFromSetting();
+             }
         }
 
         function loadFromSetting() {
             providerListModel.clear();
-            var json = openaiProvidersData.currentValue || openaiProvidersData.defaultValue || "[]";
+            var json = openaiProvidersData.value || openaiProvidersData.defaultValue || "[]";
             try {
                 var arr = JSON.parse(json);
                 for (var i = 0; i < arr.length; i++) {
@@ -95,12 +96,12 @@ PluginSettings {
             for (var i = 0; i < providerListModel.count; i++) {
                 var item = providerListModel.get(i);
                 var entry = { id: item.id };
-                if (item.apiKey) entry.apiKey = item.apiKey;
-                if (item.url) entry.url = item.url;
-                if (item.name) entry.name = item.name;
+                if (item.apiKey !== undefined) entry.apiKey = item.apiKey;
+                if (item.url !== undefined) entry.url = item.url;
+                if (item.name !== undefined) entry.name = item.name;
                 arr.push(entry);
             }
-            openaiProvidersData.currentValue = JSON.stringify(arr);
+            openaiProvidersData.value = JSON.stringify(arr);
         }
 
         function findPreset(id) {
@@ -176,7 +177,7 @@ PluginSettings {
                     width: parent.width * 0.65
                     height: 40
                     model: openaiProviderSection.presetNames
-                    displayText: "Select a provider..."
+                    displayText: currentIndex === -1 ? "Select a provider..." : currentText
                     currentIndex: -1
 
                     background: Rectangle {
@@ -251,7 +252,6 @@ PluginSettings {
                             if (addProviderCombo.currentIndex >= 0) {
                                 openaiProviderSection.addProvider(addProviderCombo.currentIndex);
                                 addProviderCombo.currentIndex = -1;
-                                addProviderCombo.displayText = "Select a provider...";
                             }
                         }
                     }
@@ -309,21 +309,11 @@ PluginSettings {
                             }
                         }
 
-                        TextField {
+                        DankTextField {
                             visible: model.needsUrl
                             width: parent.width
-                            height: 36
                             placeholderText: "Endpoint URL (e.g. http://localhost:1234/v1)"
-                            text: model.url || ""
-                            color: Theme.surfaceText
-                            font.pixelSize: Theme.fontSizeSmall
-
-                            background: Rectangle {
-                                color: Theme.surfaceContainer
-                                radius: Theme.cornerRadius
-                                border.color: parent.activeFocus ? Theme.primary : "transparent"
-                                border.width: 1
-                            }
+                            Component.onCompleted: text = model.url || ""
 
                             onEditingFinished: {
                                 providerListModel.setProperty(index, "url", text);
@@ -331,22 +321,13 @@ PluginSettings {
                             }
                         }
 
-                        TextField {
+                        DankTextField {
                             visible: model.needsApiKey
                             width: parent.width
-                            height: 36
                             placeholderText: "API Key"
-                            text: model.apiKey || ""
-                            color: Theme.surfaceText
-                            font.pixelSize: Theme.fontSizeSmall
-                            echoMode: TextInput.Password
-
-                            background: Rectangle {
-                                color: Theme.surfaceContainer
-                                radius: Theme.cornerRadius
-                                border.color: parent.activeFocus ? Theme.primary : "transparent"
-                                border.width: 1
-                            }
+                            showPasswordToggle: true
+                            echoMode: passwordVisible ? TextInput.Normal : TextInput.Password
+                            Component.onCompleted: text = model.apiKey || ""
 
                             onEditingFinished: {
                                 providerListModel.setProperty(index, "apiKey", text);

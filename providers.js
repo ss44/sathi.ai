@@ -20,14 +20,37 @@ var persistChatHistory = false;
 var pluginId = "";
 var pluginService = null;
 
-// OpenAI-compatible provider presets: id -> { name, url }
+// OpenAI-compatible provider presets: id -> { name, url, needsUrl, needsApiKey }
 var OPENAI_PRESETS = {
-    "openai":     { name: "OpenAI",      url: "https://api.openai.com/v1" },
-    "groq":       { name: "Groq",        url: "https://api.groq.com/openai/v1" },
-    "openrouter": { name: "OpenRouter",   url: "https://openrouter.ai/api/v1" },
-    "lmstudio":   { name: "LM Studio",   url: "http://localhost:1234/v1" },
-    "modal":      { name: "Modal",        url: "" }
+    "openai":     { name: "OpenAI",      url: "https://api.openai.com/v1",     needsUrl: false, needsApiKey: true },
+    "groq":       { name: "Groq",        url: "https://api.groq.com/openai/v1", needsUrl: false, needsApiKey: true },
+    "openrouter": { name: "OpenRouter",   url: "https://openrouter.ai/api/v1",  needsUrl: false, needsApiKey: true },
+    "lmstudio":   { name: "LM Studio",   url: "http://localhost:1234/v1",       needsUrl: true,  needsApiKey: false },
+    "modal":      { name: "Modal",        url: "",                                needsUrl: true,  needsApiKey: true },
+    "other":      { name: "Other",        url: "",                                needsUrl: true,  needsApiKey: true }
 };
+
+// ...
+
+function getOpenAiPresets() {
+    // Explicit order for UI consistency
+    var order = ["openai", "groq", "openrouter", "lmstudio", "modal", "other"];
+    var list = [];
+    for (var i = 0; i < order.length; i++) {
+        var key = order[i];
+        if (OPENAI_PRESETS[key]) {
+            var p = OPENAI_PRESETS[key];
+            list.push({
+                id: key,
+                name: p.name,
+                url: p.url,
+                needsUrl: p.needsUrl,
+                needsApiKey: p.needsApiKey
+            });
+        }
+    }
+    return list;
+}
 
 // Dynamic OpenAI-compatible providers configured from settings JSON.
 // Each entry: { id, name, url, apiKey, currentModel, _facade }
