@@ -4,10 +4,9 @@ import "providers.js" as Providers
 Item {
     id: root
     property string geminiApiKey: ""
-    property string openaiApiKey: ""
     property string ollamaUrl: ""
-    property string lmstudioUrl: ""
     property string anthropicApiKey: ""
+    property string openaiProviders: "[]"
 
     // signal newMessage(string text, bool isError)
     signal newModels(string modelData)
@@ -22,19 +21,13 @@ Item {
         Providers.getGeminiModels(processModels);
     }
 
-    onOpenaiApiKeyChanged: {
-        Providers.setOpenaiApiKey(openaiApiKey);
-        Providers.getOpenaiModels(processModels);
-    }
-
-    onLmstudioUrlChanged: {
-        Providers.setLMStudioUrl(lmstudioUrl);
-        Providers.getLMStudioModels(processModels);
-    }
-
     onAnthropicApiKeyChanged: {
         Providers.setAnthropicApiKey(anthropicApiKey);
         Providers.getAnthropicModels(processModels);
+    }
+
+    onOpenaiProvidersChanged: {
+        Providers.setOpenAICompatibleProviders(openaiProviders, processModels);
     }
 
     function processModels (models, error) {

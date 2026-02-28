@@ -6,10 +6,9 @@ Item {
     id: root
 
     property string geminiApiKey: ""
-    property string openaiApiKey: ""
     property string ollamaUrl: ""
-    property string lmstudioUrl: ""
     property string anthropicApiKey: ""
+    property string openaiProviders: "[]"
     property int maxHistory: 20
 
     property bool running: false
@@ -34,20 +33,16 @@ Item {
         Providers.setGeminiApiKey(geminiApiKey);
     }
 
-    onOpenaiApiKeyChanged: {
-        Providers.setOpenaiApiKey(openaiApiKey);
-    }
-
     onOllamaUrlChanged: {
         Providers.setOllamaUrl(ollamaUrl);
     }
 
-    onLmstudioUrlChanged: {
-        Providers.setLMStudioUrl(lmstudioUrl);
-    }
-
     onAnthropicApiKeyChanged: {
         Providers.setAnthropicApiKey(anthropicApiKey);
+    }
+
+    onOpenaiProvidersChanged: {
+        Providers.setOpenAICompatibleProviders(openaiProviders, function() {});
     }
     
     onMaxHistoryChanged: {

@@ -1,14 +1,11 @@
 .pragma library
 .import "gemini.js" as Gemini
 .import "ollama.js" as Ollama
-.import "openai.js" as OpenAI
-.import "lmstudio.js" as LMStudio
 .import "anthropic.js" as Anthropic
+.import "openai_compatible.js" as OpenAICompatible
 
 var ollamaUrl = "";
 var geminiKey = "";
-var openaiKey = "";
-var lmstudioUrl = "";
 var anthropicKey = "";
 var loadedModels = {};
 var modelKey = "";
@@ -22,6 +19,42 @@ var persistChatHistory = false;
 // Required for saving and loading data.
 var pluginId = "";
 var pluginService = null;
+
+// OpenAI-compatible provider presets: id -> { name, url, needsUrl, needsApiKey }
+var OPENAI_PRESETS = {
+    "openai":     { name: "OpenAI",      url: "https://api.openai.com/v1",     needsUrl: false, needsApiKey: true },
+    "groq":       { name: "Groq",        url: "https://api.groq.com/openai/v1", needsUrl: false, needsApiKey: true },
+    "openrouter": { name: "OpenRouter",   url: "https://openrouter.ai/api/v1",  needsUrl: false, needsApiKey: true },
+    "lmstudio":   { name: "LM Studio",   url: "http://localhost:1234/v1",       needsUrl: true,  needsApiKey: false },
+    "modal":      { name: "Modal",        url: "",                                needsUrl: true,  needsApiKey: true },
+    "other":      { name: "Other",        url: "",                                needsUrl: true,  needsApiKey: true }
+};
+
+// ...
+
+function getOpenAiPresets() {
+    // Explicit order for UI consistency
+    var order = ["openai", "groq", "openrouter", "lmstudio", "modal", "other"];
+    var list = [];
+    for (var i = 0; i < order.length; i++) {
+        var key = order[i];
+        if (OPENAI_PRESETS[key]) {
+            var p = OPENAI_PRESETS[key];
+            list.push({
+                id: key,
+                name: p.name,
+                url: p.url,
+                needsUrl: p.needsUrl,
+                needsApiKey: p.needsApiKey
+            });
+        }
+    }
+    return list;
+}
+
+// Dynamic OpenAI-compatible providers configured from settings JSON.
+// Each entry: { id, name, url, apiKey, currentModel, _facade }
+var openaiProviders = {};
 
 function setMaxHistory(max) {
     console.log("Setting max history to: " + max);
@@ -58,24 +91,113 @@ function setGeminiApiKey(key) {
     Gemini.setApiKey(key);
 }
 
-function setOpenaiApiKey(key) {
-    openaiKey = key;
-    OpenAI.setApiKey(key);
-}
-
 function setOllamaUrl(url) {
     ollamaUrl = url;
     Ollama.setBaseUrl(url);
 }
 
-function setLMStudioUrl(url) {
-    lmstudioUrl = url;
-    LMStudio.setBaseUrl(url);
-}
-
 function setAnthropicApiKey(key) {
     anthropicKey = key;
     Anthropic.setApiKey(key);
+}
+
+/**
+ * Configures all OpenAI-compatible providers from a JSON string.
+ * Format: [{"id":"openai","apiKey":"sk-..."}, {"id":"groq","apiKey":"gsk-..."}, {"id":"custom_1","name":"My Server","url":"http://...","apiKey":"..."}]
+ * For preset ids (openai, groq, openrouter, lmstudio, modal), the URL is auto-filled from OPENAI_PRESETS.
+ * For custom entries, user supplies both name and url.
+ */
+function setOpenAICompatibleProviders(jsonString, callback) {
+    var configs;
+    try {
+        configs = JSON.parse(jsonString);
+    } catch (e) {
+        console.error("Failed to parse OpenAI providers config: " + e);
+        return;
+    }
+
+    if (!Array.isArray(configs)) {
+        return;
+    }
+
+    if (typeof callback !== "function") {
+        callback = function() {};
+    }
+
+    // Clear previous dynamic providers and their models
+    for (var oldId in openaiProviders) {
+        removeProviderModels(oldId);
+    }
+    openaiProviders = {};
+
+    for (var i = 0; i < configs.length; i++) {
+        var config = configs[i];
+        if (!config.id) continue;
+
+        var preset = OPENAI_PRESETS[config.id];
+        var providerName = preset ? preset.name : (config.name || config.id);
+        var providerUrl = config.url || (preset ? preset.url : "");
+        var providerApiKey = config.apiKey || "";
+
+        if (!providerUrl) continue;
+
+        openaiProviders[config.id] = {
+            id: config.id,
+            name: providerName,
+            url: providerUrl,
+            apiKey: providerApiKey,
+            currentModel: ""
+        };
+
+        // Fetch models for this provider
+        fetchOpenAIProviderModels(config.id, callback);
+    }
+}
+
+function removeProviderModels(providerId) {
+    var keysToRemove = [];
+    for (var key in loadedModels) {
+        if (loadedModels[key].provider === providerId) {
+            keysToRemove.push(key);
+        }
+    }
+    for (var i = 0; i < keysToRemove.length; i++) {
+        delete loadedModels[keysToRemove[i]];
+    }
+}
+
+function fetchOpenAIProviderModels(providerId, callback) {
+    var config = openaiProviders[providerId];
+    if (!config) return;
+
+    console.log("Fetching models for OpenAI-compatible provider: " + providerId);
+    OpenAICompatible.listModels(config.url, config.apiKey, providerId, null, function(models, error) {
+        processModels(models, callback, error);
+    });
+}
+
+function getOpenAICompatibleFacade(providerId) {
+    var config = openaiProviders[providerId];
+    if (!config) return null;
+
+    if (!config._facade) {
+        config._facade = {
+            _config: config,
+            setModel: function(model) {
+                var prefix = config.id + ":";
+                this._config.currentModel = model.indexOf(prefix) === 0
+                    ? model.substring(prefix.length) : model;
+            },
+            sendChat: function(history, systemPrompt, callback) {
+                OpenAICompatible.sendChat(
+                    this._config.url, this._config.apiKey,
+                    this._config.currentModel, null,
+                    history, systemPrompt, callback
+                );
+            }
+        };
+    }
+    return config._facade;
 }
 
 function getOllamaModels(callback) {
@@ -88,20 +210,6 @@ function getOllamaModels(callback) {
 function getGeminiModels(callback) {
     console.log("Fetching Gemini models...");
     Gemini.listModels((models, error) => {
-        processModels(models, callback, error);
-    });
-}
-
-function getOpenaiModels(callback) {
-    console.log("Fetching OpenAI models...");
-    OpenAI.listModels((models, error) => {
-        processModels(models, callback, error);
-    });
-}
-
-function getLMStudioModels(callback) {
-    console.log("Fetching LM Studio models from URL: " + lmstudioUrl);
-    LMStudio.listModels((models, error) => {
         processModels(models, callback, error);
     });
 }
@@ -174,28 +282,20 @@ function getProvider() {
         return Ollama
     } else if (model.provider === "gemini") {
         return Gemini
-    } else if (model.provider === "openai") {
-        return OpenAI
-    } else if (model.provider === "lmstudio") {
-        return LMStudio
     } else if (model.provider === "anthropic") {
         return Anthropic
+    }
+
+    // Check dynamic OpenAI-compatible providers
+    var facade = getOpenAICompatibleFacade(model.provider);
+    if (facade) {
+        return facade;
     }
 
     throw new Error("Unknown provider: " + model.provider);
 }
 
 function pruneHistory() {
-    // If history exceeds maxHistory, remove oldest messages
-    // BUT preserve the first message? "leave the prompt as the first message and to not remove it"
-    // Usually the prompt is systemPrompt (handled separately now).
-    // If user meant the first *user* message, we can try to preserve index 0.
-    
-    // Let's assume user meant "system prompt" when they said "prompt".
-    // Since I moved systemPrompt to a separate variable, simply pruning the array is safe.
-    // If they strictly meant the first message in the array (e.g. user's first query),
-    // then:
-    
     if (masterHistory.length > maxHistory) {
          // Keep the first message (index 0)
          var first = masterHistory[0];
@@ -240,12 +340,6 @@ function sendMessage(text, callback) {
 
 /**
  * Saves the current chat history to persistent storage.
- * 
- * This function serializes the masterHistory array to JSON and saves it using the
- * plugin service. The save operation only occurs if chat history persistence is
- * enabled (persistChatHistory is true) and the plugin service is available.
- * 
- * @returns {void}
  */
 function saveChatHistory() {
     if (!persistChatHistory || !pluginService || !pluginId) {
@@ -261,19 +355,6 @@ function saveChatHistory() {
 
 /**
  * Loads previously saved chat history from persistent storage.
- * 
- * This function retrieves chat history from the plugin service and deserializes it
- * from JSON into the masterHistory array. The function includes safeguards to:
- * - Return an empty array if persistence is disabled or plugin service is unavailable
- * - Skip reloading if masterHistory already contains messages (returns existing masterHistory)
- * - Handle JSON parsing errors gracefully by resetting to an empty array
- * 
- * @returns {Array} The loaded chat history array. Returns an empty array if:
- *   - Chat history persistence is disabled (persistChatHistory is false)
- *   - Plugin service is not available
- *   - No saved history exists
- *   - JSON parsing fails
- *   Returns existing masterHistory if it's already loaded (length > 0).
  */
 function loadChatHistory() {
     console.debug("Attempting to load chat history.");

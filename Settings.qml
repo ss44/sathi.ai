@@ -1,7 +1,9 @@
 import QtQuick
+import QtQuick.Controls
 import qs.Common
 import qs.Modules.Plugins
 import qs.Widgets
+import "providers.js" as Providers
 
 PluginSettings {
     id: root
@@ -24,14 +26,6 @@ PluginSettings {
     }
 
     StringSetting {
-        settingKey: "openaiApiKey"
-        label: "OpenAI API Key"
-        description: "Keys can be obtained from https://platform.openai.com/api-keys"
-        placeholder: "Enter API key"
-        defaultValue: ""
-    }
-
-    StringSetting {
         settingKey: "anthropicApiKey"
         label: "Anthropic API Key"
         description: "Keys can be obtained from https://platform.claude.com/settings/keys"
@@ -47,12 +41,314 @@ PluginSettings {
         defaultValue: ""
     }
 
+    // --- OpenAI-Compatible Providers Section ---
+    // Stores config as JSON via the StringSetting below. The custom UI provides a friendly
+    // dropdown interface for adding/removing providers without editing JSON directly.
+    Item {
+        id: openaiProviderSection
+        width: parent.width
+        height: openaiSectionCol.height
+
+        property var presets: Providers.getOpenAiPresets()
+        property var presetNames: {
+            var names = [];
+            for (var i = 0; i < presets.length; i++) names.push(presets[i].name);
+            return names;
+        }
+
+        ListModel { id: providerListModel }
+
+        Connections {
+            target: openaiProvidersData
+            function onIsInitializedChanged() {
+                if (openaiProvidersData.isInitialized) {
+                     openaiProviderSection.loadFromSetting();
+                }
+            }
+        }
+
+        Component.onCompleted: {
+             if (openaiProvidersData.isInitialized) {
+                 openaiProviderSection.loadFromSetting();
+             }
+        }
+
+        function loadFromSetting() {
+            providerListModel.clear();
+            var json = openaiProvidersData.value || openaiProvidersData.defaultValue || "[]";
+            try {
+                var arr = JSON.parse(json);
+                for (var i = 0; i < arr.length; i++) {
+                    // Restore needsUrl/needsApiKey from preset
+                    var entry = arr[i];
+                    var preset = findPreset(entry.id);
+                    entry.needsUrl = preset ? preset.needsUrl : true;
+                    entry.needsApiKey = preset ? preset.needsApiKey : true;
+                    providerListModel.append(entry);
+                }
+            } catch (e) {
+                console.error("Failed to parse openaiProviders:", e);
+            }
+        }
+
+        function saveToSetting() {
+            var arr = [];
+            for (var i = 0; i < providerListModel.count; i++) {
+                var item = providerListModel.get(i);
+                var entry = { id: item.id };
+                if (item.apiKey !== undefined) entry.apiKey = item.apiKey;
+                if (item.url !== undefined) entry.url = item.url;
+                if (item.name !== undefined) entry.name = item.name;
+                arr.push(entry);
+            }
+            openaiProvidersData.value = JSON.stringify(arr);
+        }
+
+        function findPreset(id) {
+            for (var i = 0; i < presets.length; i++) {
+                if (presets[i].id === id) return presets[i];
+            }
+            return null;
+        }
+
+        function isProviderAdded(id) {
+            for (var i = 0; i < providerListModel.count; i++) {
+                if (providerListModel.get(i).id === id) return true;
+            }
+            return false;
+        }
+
+        function addProvider(presetIndex) {
+            var preset = presets[presetIndex];
+            if (!preset) return;
+
+            var providerId = preset.id;
+            if (providerId === "other") {
+                providerId = "custom_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+            } else if (isProviderAdded(providerId)) {
+                return;
+            }
+
+            providerListModel.append({
+                id: providerId,
+                name: preset.name === "Other" ? "Custom" : preset.name,
+                url: preset.url,
+                apiKey: "",
+                needsUrl: preset.needsUrl,
+                needsApiKey: preset.needsApiKey
+            });
+            saveToSetting();
+        }
+
+        function removeProvider(index) {
+            providerListModel.remove(index);
+            saveToSetting();
+        }
+
+        Column {
+            id: openaiSectionCol
+            width: parent.width
+            spacing: Theme.spacingS
+
+            StyledText {
+                text: "OpenAI-Compatible Providers"
+                font.pixelSize: Theme.fontSizeMedium
+                font.weight: Font.Bold
+                color: Theme.surfaceText
+                width: parent.width
+            }
+
+            StyledText {
+                text: "Add cloud or local providers that use the OpenAI API format (e.g. Groq, OpenRouter, LM Studio)."
+                font.pixelSize: Theme.fontSizeSmall
+                color: Theme.surfaceText
+                opacity: 0.7
+                width: parent.width
+                wrapMode: Text.WordWrap
+            }
+
+            Row {
+                width: parent.width
+                spacing: Theme.spacingS
+                height: 40
+
+                ComboBox {
+                    id: addProviderCombo
+                    width: parent.width * 0.65
+                    height: 40
+                    model: openaiProviderSection.presetNames
+                    displayText: currentIndex === -1 ? "Select a provider..." : currentText
+                    currentIndex: -1
+
+                    background: Rectangle {
+                        color: Theme.surfaceContainerHigh
+                        radius: Theme.cornerRadius
+                        border.color: addProviderCombo.popup.visible ? Theme.primary : "transparent"
+                        border.width: 1
+                    }
+
+                    contentItem: Text {
+                        text: addProviderCombo.displayText
+                        color: Theme.surfaceText
+                        font.pixelSize: Theme.fontSizeSmall
+                        verticalAlignment: Text.AlignVCenter
+                        leftPadding: Theme.spacingM
+                    }
+
+                    delegate: ItemDelegate {
+                        width: ListView.view ? ListView.view.width : 100
+                        contentItem: Text {
+                            text: modelData
+                            color: Theme.surfaceText
+                            font.pixelSize: Theme.fontSizeSmall
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                        highlighted: addProviderCombo.highlightedIndex === index
+                        background: Rectangle {
+                            color: parent.highlighted ? Theme.surfaceContainerHigh : "transparent"
+                            radius: Theme.cornerRadius
+                        }
+                    }
+
+                    popup: Popup {
+                        y: addProviderCombo.height + Theme.spacingXS
+                        width: addProviderCombo.width
+                        padding: 4
+
+                        contentItem: ListView {
+                            clip: true
+                            implicitHeight: contentHeight
+                            model: addProviderCombo.popup.visible ? addProviderCombo.delegateModel : null
+                            ScrollIndicator.vertical: ScrollIndicator { }
+                        }
+
+                        background: Rectangle {
+                            color: Theme.surfaceContainer
+                            border.color: Theme.primary
+                            border.width: 1
+                            radius: Theme.cornerRadius
+                        }
+                    }
+                }
+
+                Rectangle {
+                    width: parent.width * 0.3
+                    height: 40
+                    radius: Theme.cornerRadius
+                    color: Theme.primary
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "Add"
+                        color: Theme.onPrimary
+                        font.pixelSize: Theme.fontSizeSmall
+                        font.weight: Font.Bold
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            if (addProviderCombo.currentIndex >= 0) {
+                                openaiProviderSection.addProvider(addProviderCombo.currentIndex);
+                                addProviderCombo.currentIndex = -1;
+                            }
+                        }
+                    }
+                }
+            }
+
+            Repeater {
+                model: providerListModel
+
+                delegate: Rectangle {
+                    width: openaiSectionCol.width
+                    height: providerRowCol.height + Theme.spacingM
+                    color: Theme.surfaceContainerHigh
+                    radius: Theme.cornerRadius
+
+                    Column {
+                        id: providerRowCol
+                        width: parent.width - Theme.spacingM * 2
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: Theme.spacingXS
+
+                        Row {
+                            width: parent.width
+                            spacing: Theme.spacingS
+
+                            Text {
+                                text: model.name || model.id
+                                font.pixelSize: Theme.fontSizeSmall
+                                font.weight: Font.Bold
+                                color: Theme.primary
+                                width: parent.width - removeBtnRect.width - Theme.spacingS
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+
+                            Rectangle {
+                                id: removeBtnRect
+                                width: 24
+                                height: 24
+                                radius: 12
+                                color: "transparent"
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "✕"
+                                    color: Theme.error
+                                    font.pixelSize: Theme.fontSizeSmall
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: openaiProviderSection.removeProvider(index)
+                                }
+                            }
+                        }
+
+                        DankTextField {
+                            visible: model.needsUrl
+                            width: parent.width
+                            placeholderText: "Endpoint URL (e.g. http://localhost:1234/v1)"
+                            Component.onCompleted: text = model.url || ""
+
+                            onEditingFinished: {
+                                providerListModel.setProperty(index, "url", text);
+                                openaiProviderSection.saveToSetting();
+                            }
+                        }
+
+                        DankTextField {
+                            visible: model.needsApiKey
+                            width: parent.width
+                            placeholderText: "API Key"
+                            showPasswordToggle: true
+                            echoMode: passwordVisible ? TextInput.Normal : TextInput.Password
+                            Component.onCompleted: text = model.apiKey || ""
+
+                            onEditingFinished: {
+                                providerListModel.setProperty(index, "apiKey", text);
+                                openaiProviderSection.saveToSetting();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Hidden backing store for the OpenAI-compatible providers JSON
     StringSetting {
-        settingKey: "lmstudioUrl"
-        label: "LM Studio URL"
-        description: "URL for your local LM Studio instance (e.g. http://localhost:1234)"
-        placeholder: "http://localhost:1234"
-        defaultValue: ""
+        id: openaiProvidersData
+        settingKey: "openaiProviders"
+        label: "OpenAI Providers (JSON)"
+        description: "Managed by the section above. Edit directly only if needed."
+        placeholder: "[]"
+        defaultValue: "[]"
+        visible: false
     }
 
     StringSetting {
