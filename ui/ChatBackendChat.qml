@@ -1,6 +1,6 @@
 import QtQuick
 
-import "providers.js" as Providers
+import "../providers/providers.js" as Providers
 
 Item {
     id: root
@@ -31,23 +31,23 @@ Item {
     }
 
     onGeminiApiKeyChanged: {
-        Providers.setGeminiApiKey(geminiApiKey);
+        Providers.setCredential("gemini", geminiApiKey);
     }
 
     onOpenaiApiKeyChanged: {
-        Providers.setOpenaiApiKey(openaiApiKey);
+        Providers.setCredential("openai", openaiApiKey);
     }
 
     onOllamaUrlChanged: {
-        Providers.setOllamaUrl(ollamaUrl);
+        Providers.setCredential("ollama", ollamaUrl);
     }
 
     onLmstudioUrlChanged: {
-        Providers.setLMStudioUrl(lmstudioUrl);
+        Providers.setCredential("lmstudio", lmstudioUrl);
     }
 
     onAnthropicApiKeyChanged: {
-        Providers.setAnthropicApiKey(anthropicApiKey);
+        Providers.setCredential("anthropic", anthropicApiKey);
     }
     
     onMaxHistoryChanged: {

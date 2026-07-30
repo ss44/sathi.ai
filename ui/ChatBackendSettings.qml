@@ -1,5 +1,5 @@
 import QtQuick
-import "providers.js" as Providers
+import "../providers/providers.js" as Providers
 
 Item {
     id: root
@@ -13,28 +13,28 @@ Item {
     signal newModels(string modelData)
 
     onOllamaUrlChanged: {
-        Providers.setOllamaUrl(ollamaUrl);
-        Providers.getOllamaModels(processModels);
+        Providers.setCredential("ollama", ollamaUrl);
+        Providers.fetchModels("ollama", processModels);
     }
 
     onGeminiApiKeyChanged: {
-        Providers.setGeminiApiKey(geminiApiKey);
-        Providers.getGeminiModels(processModels);
+        Providers.setCredential("gemini", geminiApiKey);
+        Providers.fetchModels("gemini", processModels);
     }
 
     onOpenaiApiKeyChanged: {
-        Providers.setOpenaiApiKey(openaiApiKey);
-        Providers.getOpenaiModels(processModels);
+        Providers.setCredential("openai", openaiApiKey);
+        Providers.fetchModels("openai", processModels);
     }
 
     onLmstudioUrlChanged: {
-        Providers.setLMStudioUrl(lmstudioUrl);
-        Providers.getLMStudioModels(processModels);
+        Providers.setCredential("lmstudio", lmstudioUrl);
+        Providers.fetchModels("lmstudio", processModels);
     }
 
     onAnthropicApiKeyChanged: {
-        Providers.setAnthropicApiKey(anthropicApiKey);
-        Providers.getAnthropicModels(processModels);
+        Providers.setCredential("anthropic", anthropicApiKey);
+        Providers.fetchModels("anthropic", processModels);
     }
 
     function processModels (models, error) {
