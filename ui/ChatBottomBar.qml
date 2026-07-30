@@ -22,6 +22,11 @@ Column {
     signal toggleSticky()
     signal checkModelAvailability()
 
+    function focusInput() {
+        chatInput.forceActiveFocus();
+        chatInput.cursorPosition = chatInput.length;
+    }
+
     anchors.left: parent.left
     anchors.right: parent.right
     anchors.bottom: parent.bottom

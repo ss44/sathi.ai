@@ -109,7 +109,7 @@ PluginComponent {
     // or intended but this workaround seems to do the trick.
     QtObject {
         id: internalProps
-        property bool isPopoutVisible: chatPopout.visible
+        property bool isPopoutVisible: false
     }
 
     Process {
@@ -120,7 +120,7 @@ PluginComponent {
             "SathiAI",
             message.substring(0, 100) + (message.length > 100 ? "..." : "")
         ]
-        running: falsed
+        running: false
     }
 
     onAvailableAisModelChanged: {
@@ -259,8 +259,7 @@ PluginComponent {
 
             onVisibleChanged: {
                 if (visible) {
-                    chatInput.forceActiveFocus();
-                    chatInput.cursorPosition = chatInput.length;
+                    columnBottomSection.focusInput();
                 }
 
                 internalProps.isPopoutVisible = visible;
