@@ -12,7 +12,7 @@ Rectangle {
 
     color: "#2b2b2b" // Dark background for code
     radius: Theme.cornerRadius
-    border.color: Theme.surfaceVariantHigh
+    border.color: Theme.surfaceVariant
     border.width: 1
     
     implicitHeight: column.height + Theme.spacingM
