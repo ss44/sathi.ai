@@ -83,13 +83,13 @@ Column {
             }
             var ollama = settings.loadValue("ollamaUrl", "");
             if (ollama !== "") {
-                providers.push({ id: "legacy_ollama", type: "openai", name: "Ollama", url: Crypto.decodeKey(Crypto.encodeKey(ollama)), credential: "" });
+                providers.push({ id: "legacy_ollama", type: "openai", name: "Ollama", url: ollama, credential: "" });
                 settings.saveValue("ollamaUrl", "");
                 migrated = true;
             }
             var lmstudio = settings.loadValue("lmstudioUrl", "");
             if (lmstudio !== "") {
-                providers.push({ id: "legacy_lmstudio", type: "openai", name: "LM Studio", url: Crypto.decodeKey(Crypto.encodeKey(lmstudio)), credential: "" });
+                providers.push({ id: "legacy_lmstudio", type: "openai", name: "LM Studio", url: lmstudio, credential: "" });
                 settings.saveValue("lmstudioUrl", "");
                 migrated = true;
             }
