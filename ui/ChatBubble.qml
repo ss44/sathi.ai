@@ -290,8 +290,27 @@ DankRectangle {
         buttonSize: 32
         iconSize: 18
         
-        ToolTip.visible: detailsButton.hovered
-        ToolTip.text: "Test Tooltip Content"
+        HoverHandler { id: detailsHover }
+        
+        ToolTip {
+            id: detailsToolTip
+            delay: 200
+            visible: detailsHover.hovered
+            text: "Prompt Tokens: " + (root.metadata.promptTokens || 0) + "\nCompletion Tokens: " + (root.metadata.completionTokens || 0) + "\nTotal Tokens: " + (root.metadata.totalTokens || 0) + "\nEstimated Cost: " + (root.metadata.estimatedCost ? "$" + root.metadata.estimatedCost.toFixed(6) : "N/A")
+            
+            background: Rectangle {
+                color: Theme.surfaceContainerHigh
+                radius: Theme.cornerRadius
+                border.color: Theme.outlineVariant
+                border.width: 1
+            }
+            
+            contentItem: Text {
+                text: detailsToolTip.text
+                color: Theme.surfaceText
+                font.pixelSize: Theme.fontSizeSmall
+            }
+        }
         
         onClicked: {}
     }
