@@ -83,8 +83,8 @@ function setPluginService(service) {
     pluginService = service;
 }
 
-function addMessage(role, content) {
-    masterHistory.push({ role: role, content: content });
+function addMessage(role, content, metadata) {
+    masterHistory.push({ role: role, content: content, metadata: metadata || {} });
     pruneHistory();
     saveChatHistory();
 }

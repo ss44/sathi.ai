@@ -16,6 +16,8 @@ DankRectangle {
     property var contentBlocks: []
     property bool useRichView: !typeWriterTimer.running && !root.isThinking && root.displayedText.length > 0
     property real thinkingStartTime: 0
+    property var metadata: ({})
+    property bool showMessageDetails: false
 
     onUseRichViewChanged: updateContentBlocks()
     onDisplayedTextChanged: if (useRichView) updateContentBlocks()
@@ -251,6 +253,7 @@ DankRectangle {
     }
 
     DankActionButton {
+        id: copyButton
         anchors.top: parent.top
         anchors.right: parent.right
         anchors.margins: Theme.spacingXS
@@ -273,5 +276,23 @@ DankRectangle {
             copyHelper.selectAll()
             copyHelper.copy()
         }
+    }
+
+    DankActionButton {
+        id: detailsButton
+        anchors.top: parent.top
+        anchors.right: copyButton.left
+        anchors.margins: Theme.spacingXS
+        
+        visible: bubbleHover.hovered && !root.isThinking && root.showMessageDetails && root.metadata && root.metadata.totalTokens !== undefined
+        
+        iconName: "info"
+        buttonSize: 32
+        iconSize: 18
+        
+        ToolTip.visible: detailsButton.hovered
+        ToolTip.text: "Test Tooltip Content"
+        
+        onClicked: {}
     }
 }

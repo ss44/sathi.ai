@@ -96,4 +96,11 @@ PluginSettings {
         description: "Enable or disable message alerts when the chat popout is hidden."
         defaultValue: false
     }
+
+    ToggleSetting {
+        settingKey: "showMessageDetails"
+        label: "Show Message Details"
+        description: "Display an icon on hovered messages with details like token usage and cost."
+        defaultValue: false
+    }
 }

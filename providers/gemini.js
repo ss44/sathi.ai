@@ -135,7 +135,8 @@ function sendChat(history, systemPrompt, callback) {
             
             responseText = response.candidates[0].content.parts[0].text;
             
-            callback(responseText, null);
+            var meta = response.usageMetadata ? { promptTokens: response.usageMetadata.promptTokenCount, completionTokens: response.usageMetadata.candidatesTokenCount, totalTokens: response.usageMetadata.totalTokenCount } : {};
+            callback(responseText, null, meta);
         } else {
             callback(null, "Empty response from API");
         }

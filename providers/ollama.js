@@ -109,7 +109,8 @@ function sendChat(history, systemPrompt, callback) {
         
         if (response.message && response.message.content) {
             responseText = response.message.content;
-            callback(responseText, null);
+            var meta = { promptTokens: response.prompt_eval_count || 0, completionTokens: response.eval_count || 0, totalTokens: (response.prompt_eval_count || 0) + (response.eval_count || 0) };
+            callback(responseText, null, meta);
         } else {
             callback(null, "Empty response from Ollama");
         }
