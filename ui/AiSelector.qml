@@ -8,7 +8,7 @@ ComboBox {
 
     width: parent.width
     textRole: "display_name"
-    valueRole: "name"
+    valueRole: "id"
     flat: true
     height: 40
 
@@ -68,7 +68,7 @@ ComboBox {
 
             ScrollIndicator.vertical: ScrollIndicator { }
 
-            section.property: "provider"
+            section.property: "providerName"
             section.criteria: ViewSection.FullString
             section.delegate: ItemDelegate {
                 width: ListView.view.width

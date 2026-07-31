@@ -1,6 +1,7 @@
 import QtQuick
 import qs.Common
 import qs.Widgets
+import qs.Modals.Common
 import "../providers/crypto.js" as Crypto
 
 // Using duck typing for findSettings since we can't easily import QmlUtils from here
@@ -12,6 +13,10 @@ Column {
     
     property var providers: []
     property bool loaded: false
+    
+    ConfirmModal {
+        id: confirmModal
+    }
     
     function findSettings(item) {
         while (item) {
@@ -30,38 +35,61 @@ Column {
     function loadValue() {
         const settings = findSettings(root.parent);
         if (settings) {
-            providers = settings.loadValue("customProviders", []);
+            var rawProviders = settings.loadValue("customProviders", []);
+            
+            // Normalize old types to "openai" compatible and ensure IDs exist
+            for (let i = 0; i < rawProviders.length; i++) {
+                if (!rawProviders[i].id) {
+                    rawProviders[i].id = "prov_" + Date.now() + "_" + Math.floor(Math.random() * 1000) + "_" + i;
+                }
+                if (rawProviders[i].type === "ollama") {
+                    rawProviders[i].type = "openai";
+                    if (!rawProviders[i].url) {
+                        rawProviders[i].url = Crypto.decodeKey(rawProviders[i].credential);
+                        rawProviders[i].credential = "";
+                    }
+                } else if (rawProviders[i].type === "lmstudio") {
+                    rawProviders[i].type = "openai";
+                    if (!rawProviders[i].url) {
+                        rawProviders[i].url = Crypto.decodeKey(rawProviders[i].credential);
+                        rawProviders[i].credential = "";
+                    }
+                } else if (rawProviders[i].type === "openai" && !rawProviders[i].url) {
+                    rawProviders[i].url = "https://api.openai.com";
+                }
+            }
+            providers = rawProviders;
             
             // Migration logic
             var migrated = false;
             
             var gemini = settings.loadValue("geminiApiKey", "");
             if (gemini !== "") {
-                providers.push({ type: "gemini", name: "Gemini", credential: Crypto.encodeKey(gemini), useGrounding: true });
+                providers.push({ id: "legacy_gemini", type: "gemini", name: "Gemini", credential: Crypto.encodeKey(gemini), useGrounding: true });
                 settings.saveValue("geminiApiKey", "");
                 migrated = true;
             }
             var openai = settings.loadValue("openaiApiKey", "");
             if (openai !== "") {
-                providers.push({ type: "openai", name: "OpenAI", credential: Crypto.encodeKey(openai) });
+                providers.push({ id: "legacy_openai", type: "openai", name: "OpenAI", url: "https://api.openai.com", credential: Crypto.encodeKey(openai) });
                 settings.saveValue("openaiApiKey", "");
                 migrated = true;
             }
             var anthropic = settings.loadValue("anthropicApiKey", "");
             if (anthropic !== "") {
-                providers.push({ type: "anthropic", name: "Anthropic", credential: Crypto.encodeKey(anthropic) });
+                providers.push({ id: "legacy_anthropic", type: "anthropic", name: "Anthropic", credential: Crypto.encodeKey(anthropic) });
                 settings.saveValue("anthropicApiKey", "");
                 migrated = true;
             }
             var ollama = settings.loadValue("ollamaUrl", "");
             if (ollama !== "") {
-                providers.push({ type: "ollama", name: "Ollama", credential: Crypto.encodeKey(ollama) });
+                providers.push({ id: "legacy_ollama", type: "openai", name: "Ollama", url: Crypto.decodeKey(Crypto.encodeKey(ollama)), credential: "" });
                 settings.saveValue("ollamaUrl", "");
                 migrated = true;
             }
             var lmstudio = settings.loadValue("lmstudioUrl", "");
             if (lmstudio !== "") {
-                providers.push({ type: "lmstudio", name: "LM Studio", credential: Crypto.encodeKey(lmstudio) });
+                providers.push({ id: "legacy_lmstudio", type: "openai", name: "LM Studio", url: Crypto.decodeKey(Crypto.encodeKey(lmstudio)), credential: "" });
                 settings.saveValue("lmstudioUrl", "");
                 migrated = true;
             }
@@ -85,8 +113,10 @@ Column {
     function addProvider(type) {
         var newProviders = providers.slice();
         var defaultName = type.charAt(0).toUpperCase() + type.slice(1);
+        if (type === "openai") defaultName = "OpenAI Compatible";
         
         var newProv = {
+            id: "prov_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
             type: type,
             name: "New " + defaultName,
             credential: ""
@@ -94,11 +124,23 @@ Column {
         
         if (type === "gemini") {
             newProv.useGrounding = false;
+        } else if (type === "openai") {
+            newProv.url = "https://api.openai.com";
         }
         
         newProviders.push(newProv);
         providers = newProviders;
         saveProviders();
+        
+        Qt.callLater(() => {
+            if (providerRepeater.count > 0) {
+                var newItem = providerRepeater.itemAt(providerRepeater.count - 1);
+                const settings = findSettings(root.parent);
+                if (settings && settings.ensureItemVisible && newItem) {
+                    settings.ensureItemVisible(newItem);
+                }
+            }
+        });
     }
     
     function updateProvider(index, key, value) {
@@ -140,10 +182,16 @@ Column {
         DankDropdown {
             width: parent.width - btnAdd.width - Theme.spacingS
             text: "Provider Type"
-            currentValue: parent.selectedType
-            options: ["gemini", "openai", "anthropic", "ollama", "lmstudio"]
+            currentValue: {
+                if (parent.selectedType === "gemini") return "Google Gemini";
+                if (parent.selectedType === "anthropic") return "Anthropic Claude";
+                return "OpenAI Compatible";
+            }
+            options: ["Google Gemini", "Anthropic Claude", "OpenAI Compatible"]
             onValueChanged: newValue => {
-                parent.selectedType = newValue;
+                if (newValue === "Google Gemini") parent.selectedType = "gemini";
+                else if (newValue === "Anthropic Claude") parent.selectedType = "anthropic";
+                else parent.selectedType = "openai";
             }
         }
 
@@ -172,6 +220,7 @@ Column {
         spacing: Theme.spacingL
         
         Repeater {
+            id: providerRepeater
             model: root.providers
             
             Column {
@@ -182,7 +231,7 @@ Column {
                     width: parent.width
                     
                     StyledText {
-                        text: modelData.type.toUpperCase() + " CONFIGURATION"
+                        text: (modelData.type === "openai" ? "OPENAI COMPATIBLE" : modelData.type.toUpperCase()) + " CONFIGURATION"
                         color: Theme.primary
                         font.pixelSize: Theme.fontSizeSmall
                         font.weight: Font.Bold
@@ -199,7 +248,15 @@ Column {
                         backgroundColor: "transparent"
                         
                         onClicked: {
-                            root.removeProvider(index);
+                            confirmModal.showWithOptions({
+                                title: "Remove Provider",
+                                message: "Are you sure you want to remove the '" + modelData.name + "' provider configuration? This action cannot be undone.",
+                                confirmText: "Remove",
+                                confirmColor: Theme.error,
+                                onConfirm: () => {
+                                    root.removeProvider(index);
+                                }
+                            });
                         }
                     }
                 }
@@ -215,16 +272,28 @@ Column {
                     }
                 }
                 
+                DankTextField {
+                    width: parent.width
+                    visible: modelData.type === "openai"
+                    placeholderText: "Base URL (e.g. https://api.openai.com or http://localhost:11434)"
+                    text: modelData.url || ""
+                    onTextChanged: {
+                        if (root.loaded && text !== (modelData.url || "")) {
+                            root.updateProvider(index, "url", text);
+                        }
+                    }
+                }
+                
                 Row {
                     width: parent.width
                     spacing: Theme.spacingS
                     
                     property bool showKey: false
-                    property bool isPassword: modelData.type !== "ollama" && modelData.type !== "lmstudio"
+                    property bool isPassword: true
                     
                     DankTextField {
                         width: parent.width - (parent.isPassword ? btnReveal.width + Theme.spacingS : 0)
-                        placeholderText: parent.isPassword ? "API Key" : "Base URL (e.g. http://localhost:11434)"
+                        placeholderText: "API Key (leave blank for local unenforced models)"
                         text: Crypto.decodeKey(modelData.credential)
                         echoMode: (!parent.isPassword || parent.showKey) ? TextInput.Normal : TextInput.Password
                         

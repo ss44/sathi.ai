@@ -57,32 +57,33 @@ Item {
                 
                 // Decrypt credential
                 let rawCred = Crypto.decodeKey(p.credential);
+                let pid = p.id || p.name;
                 
-                Providers.addCustomProvider(p.type, p.name, rawCred);
-                Providers.fetchModelsForInstance(p.name, processModels);
+                Providers.addCustomProvider(p.type, p.name, rawCred, p.url, p.useGrounding, pid);
+                Providers.fetchModelsForInstance(pid, processModels);
             }
         } else {
             console.info("[ChatBackendSettings] No custom providers found, checking legacy keys");
             // Legacy loading
             if (geminiApiKey !== "") {
-                Providers.addCustomProvider("gemini", "Gemini", geminiApiKey);
-                Providers.fetchModelsForInstance("Gemini", processModels);
+                Providers.addCustomProvider("gemini", "Gemini", geminiApiKey, null, true, "legacy_gemini");
+                Providers.fetchModelsForInstance("legacy_gemini", processModels);
             }
             if (openaiApiKey !== "") {
-                Providers.addCustomProvider("openai", "OpenAI", openaiApiKey);
-                Providers.fetchModelsForInstance("OpenAI", processModels);
+                Providers.addCustomProvider("openai", "OpenAI", openaiApiKey, "https://api.openai.com", false, "legacy_openai");
+                Providers.fetchModelsForInstance("legacy_openai", processModels);
             }
             if (anthropicApiKey !== "") {
-                Providers.addCustomProvider("anthropic", "Anthropic", anthropicApiKey);
-                Providers.fetchModelsForInstance("Anthropic", processModels);
+                Providers.addCustomProvider("anthropic", "Anthropic", anthropicApiKey, null, false, "legacy_anthropic");
+                Providers.fetchModelsForInstance("legacy_anthropic", processModels);
             }
             if (ollamaUrl !== "") {
-                Providers.addCustomProvider("ollama", "Ollama", ollamaUrl);
-                Providers.fetchModelsForInstance("Ollama", processModels);
+                Providers.addCustomProvider("openai", "Ollama", "", ollamaUrl, false, "legacy_ollama");
+                Providers.fetchModelsForInstance("legacy_ollama", processModels);
             }
             if (lmstudioUrl !== "") {
-                Providers.addCustomProvider("lmstudio", "LM Studio", lmstudioUrl);
-                Providers.fetchModelsForInstance("LM Studio", processModels);
+                Providers.addCustomProvider("openai", "LM Studio", "", lmstudioUrl, false, "legacy_lmstudio");
+                Providers.fetchModelsForInstance("legacy_lmstudio", processModels);
             }
         }
     }

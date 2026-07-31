@@ -1,16 +1,12 @@
 .pragma library
 .import "gemini.js" as Gemini
-.import "ollama.js" as Ollama
 .import "openai.js" as OpenAI
-.import "lmstudio.js" as LMStudio
 .import "anthropic.js" as Anthropic
 .import "../chatHistory.js" as ChatHistory
 
 var ProviderRegistry = {
     "gemini": Gemini,
-    "ollama": Ollama,
     "openai": OpenAI,
-    "lmstudio": LMStudio,
     "anthropic": Anthropic
 };
 
@@ -27,20 +23,24 @@ function clearProviders() {
     loadedModels = {};
 }
 
-function addCustomProvider(type, name, credential) {
-    console.info("[Providers] Adding custom provider instance: '" + name + "' of type: '" + type + "' (credential length: " + (credential ? credential.length : 0) + ")");
-    customProviderInstances[name] = {
+function addCustomProvider(type, name, credential, url, useGrounding, id) {
+    var pid = id || name;
+    console.info("[Providers] Adding custom provider instance: '" + name + "' (id: " + pid + ") of type: '" + type + "' (credential length: " + (credential ? credential.length : 0) + ")");
+    customProviderInstances[pid] = {
+        id: pid,
         type: type,
         name: name,
-        credential: credential
+        credential: credential,
+        url: url,
+        useGrounding: useGrounding
     };
 }
 
-function fetchModelsForInstance(instanceName, callback) {
-    console.info("[Providers] fetchModelsForInstance called for: " + instanceName);
-    var instance = customProviderInstances[instanceName];
+function fetchModelsForInstance(instanceId, callback) {
+    console.info("[Providers] fetchModelsForInstance called for: " + instanceId);
+    var instance = customProviderInstances[instanceId];
     if (!instance) {
-        console.error("[Providers] Error: Instance not found: " + instanceName);
+        console.error("[Providers] Error: Instance not found: " + instanceId);
         return;
     }
     
@@ -51,39 +51,46 @@ function fetchModelsForInstance(instanceName, callback) {
     }
     
     // Set credential synchronously before calling listModels
-    if (instance.type === 'ollama' || instance.type === 'lmstudio') {
-        console.info("[Providers] Setting base URL for " + instance.type + " instance " + instanceName + " to: " + instance.credential);
-        provider.setBaseUrl(instance.credential);
-    } else {
-        console.info("[Providers] Setting API key for " + instance.type + " instance " + instanceName);
+    if (instance.type !== 'openai') {
+        console.info("[Providers] Setting API key for " + instance.type + " instance " + instance.name);
         provider.setApiKey(instance.credential);
     }
     
     console.info("[Providers] Calling listModels on provider: " + instance.type);
-    provider.listModels((models, error) => {
+    
+    var cb = (models, error) => {
         if (error) {
-            console.error("[Providers] Error fetching models for " + instanceName + ": " + error);
+            console.error("[Providers] Error fetching models for " + instance.name + ": " + error);
             callback(null, error);
             return;
         }
         
-        console.info("[Providers] Fetched " + (models ? models.length : 0) + " models for " + instanceName);
+        console.info("[Providers] Fetched " + (models ? models.length : 0) + " models for " + instance.name);
         if (models && models.length > 0) {
             for (var i = 0; i < models.length; i++) {
-                // Rename provider to instanceName so we can route it back
-                models[i].provider = instanceName;
-                loadedModels[models[i].name] = models[i];
+                models[i].provider = instanceId;
+                models[i].providerName = instance.name;
+                // Avoid model name collisions between different provider instances
+                // by using a unique internal ID, but preserving the original name for the API call
+                models[i].id = instanceId + "|" + models[i].name;
+                loadedModels[models[i].id] = models[i];
             }
             if (modelKey === "") {
-                console.info("[Providers] Setting default model to " + models[0].name);
-                setModel(models[0].name);
+                console.info("[Providers] Setting default model to " + models[0].id);
+                setModel(models[0].id);
             }
             console.info("[Providers] Currently " + Object.keys(loadedModels).length + " total loaded models across all providers");
             callback(models, null);
         } else {
             callback([], null);
         }
-    });
+    };
+    
+    if (instance.type === 'openai') {
+        provider.listModels(cb, { baseUrl: instance.url, apiKey: instance.credential, instanceName: instance.name });
+    } else {
+        provider.listModels(cb);
+    }
 }
 
 function setMaxHistory(max) {
@@ -247,16 +254,8 @@ function sendMessage(text, callback) {
     }
     
     console.info("[Providers] Preparing provider credential. Type: " + instance.type);
-    // Set credential and model synchronously before calling sendChat
-    if (instance.type === 'ollama' || instance.type === 'lmstudio') {
-        provider.setBaseUrl(instance.credential);
-    } else {
-        provider.setApiKey(instance.credential);
-    }
-    provider.setModel(cModel.name);
     
-    console.info("[Providers] Calling sendChat on provider " + instance.type);
-    provider.sendChat(ChatHistory.getHistory(), systemPrompt, function(response, error, metadata){
+    var cb = function(response, error, metadata){
         if (error) {
             console.error("[Providers] sendChat returned error: " + error);
         }
@@ -273,7 +272,31 @@ function sendMessage(text, callback) {
             console.warn("[Providers] sendChat returned neither response nor error");
         }
         callback(response, error, metadata);
-    });
+    };
+
+    // Set credential and model synchronously before calling sendChat
+    if (instance.type === 'openai') {
+        provider.setModel(cModel.name);
+        console.info("[Providers] Calling sendChat on provider " + instance.type);
+        provider.sendChat(ChatHistory.getHistory(), systemPrompt, cb, {
+            baseUrl: instance.url,
+            apiKey: instance.credential,
+            model: cModel.name
+        });
+    } else if (instance.type === 'gemini') {
+        provider.setModel(cModel.name);
+        console.info("[Providers] Calling sendChat on provider " + instance.type);
+        provider.sendChat(ChatHistory.getHistory(), systemPrompt, cb, {
+            credential: instance.credential,
+            useGrounding: instance.useGrounding,
+            model: cModel.name
+        });
+    } else {
+        provider.setApiKey(instance.credential);
+        provider.setModel(cModel.name);
+        console.info("[Providers] Calling sendChat on provider " + instance.type);
+        provider.sendChat(ChatHistory.getHistory(), systemPrompt, cb);
+    }
 }
 
 function isModelLoaded(modelName) {

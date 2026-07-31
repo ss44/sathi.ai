@@ -168,6 +168,7 @@ DankRectangle {
         }
 
         ColumnLayout {
+            id: richColumn
             visible: root.useRichView && !root.isThinking
             Layout.fillWidth: true
             spacing: Theme.spacingS
@@ -209,6 +210,87 @@ DankRectangle {
                              language: modelData.language
                              Layout.fillWidth: true
                          }
+                    }
+                }
+            }
+            
+            property var uniqueGroundingChunks: {
+                var chunks = root.metadata && root.metadata.groundingMetadata ? root.metadata.groundingMetadata.groundingChunks : [];
+                if (!chunks || chunks.length === 0) return [];
+                
+                var seen = {};
+                var uniqueChunks = [];
+                for (var i = 0; i < chunks.length; i++) {
+                    var uri = chunks[i].web ? chunks[i].web.uri : "";
+                    if (uri !== "" && !seen[uri]) {
+                        seen[uri] = true;
+                        uniqueChunks.push(chunks[i]);
+                    }
+                }
+                return uniqueChunks;
+            }
+
+            Rectangle {
+                visible: richColumn.uniqueGroundingChunks && richColumn.uniqueGroundingChunks.length > 0
+                Layout.fillWidth: true
+                height: 1
+                color: Theme.outline
+                opacity: 0.1
+                Layout.topMargin: Theme.spacingS
+                Layout.bottomMargin: Theme.spacingS
+            }
+            
+            Flow {
+                visible: richColumn.uniqueGroundingChunks && richColumn.uniqueGroundingChunks.length > 0
+                Layout.fillWidth: true
+                spacing: Theme.spacingS
+                
+                Repeater {
+                    model: richColumn.uniqueGroundingChunks
+                    
+                    delegate: Rectangle {
+                        color: sourceHover.containsMouse ? Theme.surfaceVariant : "transparent"
+                        border.color: Theme.outlineVariant
+                        border.width: 1
+                        radius: Theme.cornerRadius
+                        height: sourceContent.implicitHeight + Theme.spacingS
+                        width: sourceContent.implicitWidth + Theme.spacingM
+                        
+                        property string uri: modelData.web ? modelData.web.uri : ""
+                        property string title: modelData.web ? modelData.web.title : ""
+                        
+                        visible: uri !== ""
+                        
+                        RowLayout {
+                            id: sourceContent
+                            anchors.centerIn: parent
+                            spacing: Theme.spacingS
+                            
+                            StyledText {
+                                text: "public"
+                                font.family: "Material Symbols Rounded"
+                                font.pixelSize: 14
+                                color: Theme.primary
+                                Layout.alignment: Qt.AlignVCenter
+                            }
+                            
+                            StyledText {
+                                id: sourceText
+                                text: parent.parent.title
+                                color: Theme.primary
+                                font.pixelSize: Theme.fontSizeSmall
+                                Layout.alignment: Qt.AlignVCenter
+                                elide: Text.ElideRight
+                            }
+                        }
+                        
+                        MouseArea {
+                            id: sourceHover
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            hoverEnabled: true
+                            onClicked: Qt.openUrlExternally(parent.uri)
+                        }
                     }
                 }
             }
