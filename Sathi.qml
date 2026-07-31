@@ -170,7 +170,7 @@ PluginComponent {
         pluginId: root.pluginId
         pluginService: root.pluginService
 
-        onNewMessage: (text, isError) => {
+        onNewMessage: (text, isError, metadata) => {
             root.isLoading = false;
             // Remove the thinking bubble if it exists
             if (chatModel.count > 0) {
@@ -179,7 +179,7 @@ PluginComponent {
                      chatModel.remove(chatModel.count - 1);
                  }
             }
-            chatModel.append(createChatEntry(text, false, true, false));
+            chatModel.append(createChatEntry(text, false, true, false, metadata));
 
             root.pruneUiHistory();
             
@@ -194,7 +194,8 @@ PluginComponent {
                     message.content,
                     message.role === "user",
                     false,
-                    false
+                    false,
+                    message.metadata || {}
                 ));
             }
             root.pruneUiHistory();
@@ -228,24 +229,25 @@ PluginComponent {
         }
     }
 
-    function createChatEntry(text, isUser, shouldAnimate, isThinking) {
+    function createChatEntry(text, isUser, shouldAnimate, isThinking, metadata) {
         return {
             "text": text,
             "isUser": isUser,
             "shouldAnimate": shouldAnimate,
             "isThinking": isThinking,
-            "thinkingStartTime": isThinking ? Date.now() : 0
+            "thinkingStartTime": isThinking ? Date.now() : 0,
+            "metadata": metadata || {}
         };
     }
 
     function processMessage(message) {
         if (message === "") return;
 
-        chatModel.append(createChatEntry(message, true, false, false));
+        chatModel.append(createChatEntry(message, true, false, false, {}));
         root.pruneUiHistory();
         root.isLoading = true;
         
-        chatModel.append(createChatEntry("", false, true, true));
+        chatModel.append(createChatEntry("", false, true, true, {}));
         backendChat.sendMessage(message);
     }
 
@@ -312,6 +314,8 @@ PluginComponent {
                                 shouldAnimate: model.shouldAnimate
                                 isThinking: model.isThinking !== undefined ? model.isThinking : false
                                 thinkingStartTime: model.thinkingStartTime !== undefined ? model.thinkingStartTime : 0
+                                metadata: model.metadata !== undefined ? model.metadata : ({})
+                                showMessageDetails: pluginData.showMessageDetails === true
                                 width: chatColumn.width - (chatColumn.padding * 2)
                                 onAnimationCompleted: model.shouldAnimate = false
                             }

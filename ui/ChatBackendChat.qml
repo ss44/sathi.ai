@@ -21,7 +21,7 @@ Item {
     property string pluginId
     property var pluginService
 
-    signal newMessage(string text, bool isError)
+    signal newMessage(string text, bool isError, var metadata)
     signal chatHistoryLoaded(var chatHistory)
 
     // We only ever want to try and load chat once.
@@ -74,11 +74,11 @@ Item {
     }
 
     function sendMessage(text) {
-        Providers.sendMessage(text, function(response, error) {
+        Providers.sendMessage(text, function(response, error, metadata) {
             if (error) {
-                newMessage("Error: " + error, true);
+                newMessage("Error: " + error, true, {});
             } else {
-                newMessage(response, false);
+                newMessage(response, false, metadata);
             }
         });
     }

@@ -112,7 +112,8 @@ function sendChat(history, systemPrompt, callback) {
 
         if (response.choices && response.choices.length > 0) {
             var content = response.choices[0].message.content;
-            callback(content, null);
+            var meta = response.usage ? { promptTokens: response.usage.prompt_tokens, completionTokens: response.usage.completion_tokens, totalTokens: response.usage.total_tokens } : {};
+            callback(content, null, meta);
         } else {
             callback(null, "No response content");
         }

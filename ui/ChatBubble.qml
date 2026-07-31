@@ -16,6 +16,8 @@ DankRectangle {
     property var contentBlocks: []
     property bool useRichView: !typeWriterTimer.running && !root.isThinking && root.displayedText.length > 0
     property real thinkingStartTime: 0
+    property var metadata: ({})
+    property bool showMessageDetails: false
 
     onUseRichViewChanged: updateContentBlocks()
     onDisplayedTextChanged: if (useRichView) updateContentBlocks()
@@ -251,6 +253,7 @@ DankRectangle {
     }
 
     DankActionButton {
+        id: copyButton
         anchors.top: parent.top
         anchors.right: parent.right
         anchors.margins: Theme.spacingXS
@@ -273,5 +276,42 @@ DankRectangle {
             copyHelper.selectAll()
             copyHelper.copy()
         }
+    }
+
+    DankActionButton {
+        id: detailsButton
+        anchors.top: parent.top
+        anchors.right: copyButton.left
+        anchors.margins: Theme.spacingXS
+        
+        visible: bubbleHover.hovered && !root.isThinking && root.showMessageDetails && root.metadata && root.metadata.totalTokens !== undefined
+        
+        iconName: "info"
+        buttonSize: 32
+        iconSize: 18
+        
+        HoverHandler { id: detailsHover }
+        
+        ToolTip {
+            id: detailsToolTip
+            delay: 200
+            visible: detailsHover.hovered
+            text: "Prompt Tokens: " + (root.metadata.promptTokens || 0) + "\nCompletion Tokens: " + (root.metadata.completionTokens || 0) + "\nTotal Tokens: " + (root.metadata.totalTokens || 0) + "\nEstimated Cost: " + (root.metadata.estimatedCost ? "$" + root.metadata.estimatedCost.toFixed(6) : "N/A")
+            
+            background: Rectangle {
+                color: Theme.surfaceContainerHigh
+                radius: Theme.cornerRadius
+                border.color: Theme.outlineVariant
+                border.width: 1
+            }
+            
+            contentItem: Text {
+                text: detailsToolTip.text
+                color: Theme.surfaceText
+                font.pixelSize: Theme.fontSizeSmall
+            }
+        }
+        
+        onClicked: {}
     }
 }
