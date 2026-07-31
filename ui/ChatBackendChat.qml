@@ -5,11 +5,6 @@ import "../providers/providers.js" as Providers
 Item {
     id: root
 
-    property string geminiApiKey: ""
-    property string openaiApiKey: ""
-    property string ollamaUrl: ""
-    property string lmstudioUrl: ""
-    property string anthropicApiKey: ""
     property int maxHistory: 20
 
     property bool running: false
@@ -30,26 +25,6 @@ Item {
         property bool tryToLoadChat: true
     }
 
-    onGeminiApiKeyChanged: {
-        Providers.setCredential("gemini", geminiApiKey);
-    }
-
-    onOpenaiApiKeyChanged: {
-        Providers.setCredential("openai", openaiApiKey);
-    }
-
-    onOllamaUrlChanged: {
-        Providers.setCredential("ollama", ollamaUrl);
-    }
-
-    onLmstudioUrlChanged: {
-        Providers.setCredential("lmstudio", lmstudioUrl);
-    }
-
-    onAnthropicApiKeyChanged: {
-        Providers.setCredential("anthropic", anthropicApiKey);
-    }
-    
     onMaxHistoryChanged: {
         Providers.setMaxHistory(maxHistory);
     }
@@ -60,8 +35,10 @@ Item {
     }
 
     onModelChanged: {
-        console.debug("Model changed: " + model);
-        Providers.setModel(model);
+        if (model !== "") {
+            console.debug("Model changed: " + model);
+            Providers.setModel(model);
+        }
     }
 
     onUseGroundingChanged: {

@@ -2,6 +2,7 @@ import QtQuick
 import qs.Common
 import qs.Modules.Plugins
 import qs.Widgets
+import "ui"
 
 PluginSettings {
     id: root
@@ -15,44 +16,8 @@ PluginSettings {
         color: Theme.surfaceText
     }
     
-    StringSetting {
-        settingKey: "geminiApiKey"
-        label: "Google Gemini API Key"
-        description: "Keys can be obtained from https://aistudio.google.com/api-keys"
-        placeholder: "Enter API key"
-        defaultValue: ""
-    }
-
-    StringSetting {
-        settingKey: "openaiApiKey"
-        label: "OpenAI API Key"
-        description: "Keys can be obtained from https://platform.openai.com/api-keys"
-        placeholder: "Enter API key"
-        defaultValue: ""
-    }
-
-    StringSetting {
-        settingKey: "anthropicApiKey"
-        label: "Anthropic API Key"
-        description: "Keys can be obtained from https://platform.claude.com/settings/keys"
-        placeholder: "Enter API key"
-        defaultValue: ""
-    }
-
-    StringSetting {
-        settingKey: "ollamaUrl"
-        label: "Ollama URL"
-        description: "URL for your local Ollama instance (e.g. http://localhost:11434)"
-        placeholder: "http://localhost:11434"
-        defaultValue: ""
-    }
-
-    StringSetting {
-        settingKey: "lmstudioUrl"
-        label: "LM Studio URL"
-        description: "URL for your local LM Studio instance (e.g. http://localhost:1234)"
-        placeholder: "http://localhost:1234"
-        defaultValue: ""
+    ProviderList {
+        width: parent.width
     }
 
     StringSetting {

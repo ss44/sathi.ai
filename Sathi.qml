@@ -155,11 +155,6 @@ PluginComponent {
 
     ChatBackendChat {
         id: backendChat
-        geminiApiKey: pluginData.geminiApiKey || ""
-        openaiApiKey: pluginData.openaiApiKey || ""
-        anthropicApiKey: pluginData.anthropicApiKey || ""
-        ollamaUrl: pluginData.ollamaUrl || ""
-        lmstudioUrl: pluginData.lmstudioUrl || ""
         persistChatHistory: pluginData.persistChatHistory
 
         model: root.aiModel
@@ -204,6 +199,7 @@ PluginComponent {
 
     ChatBackendSettings {
         id: backendSettings
+        customProviders: pluginData.customProviders || []
         geminiApiKey: pluginData.geminiApiKey || ""
         openaiApiKey: pluginData.openaiApiKey || ""
         anthropicApiKey: pluginData.anthropicApiKey || ""
