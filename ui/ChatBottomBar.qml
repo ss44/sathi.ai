@@ -63,19 +63,34 @@ Column {
         spacing: Theme.spacingS
         anchors.bottomMargin: Theme.spacingXL
 
+        DankActionButton {
+            id: btnSettings
+            anchors.verticalCenter: parent.verticalCenter
+            
+            visible: true
+            
+            iconName: "settings"
+            buttonSize: 32
+            iconSize: 18
+            
+            onClicked: () => {
+                Quickshell.execDetached(["dms", "ipc", "call", "settings", "openWith", "plugins"]);
+            }
+        }
+
         AiSelector {
             id: cbModelSelector
             model: availableAisModel
             maxPopupHeight: popoutHeight * 0.6
 
-            width: parent.width - rowBottomRowActions.width - Theme.spacingS
+            width: parent.width - rowBottomRowActions.width - btnSettings.width - (Theme.spacingS * 2)
             textRole: "display_name"
-            valueRole: "name"
+            valueRole: "id"
             displayText: currentIndex === -1 ? "Select an AI Model..." : currentText
 
             function updateIndex() {
                 for (var i = 0; i < availableAisModel.count; i++) {
-                    if (availableAisModel.get(i).name === columnBottomSection.aiModel) {
+                    if (availableAisModel.get(i).id === columnBottomSection.aiModel) {
                         currentIndex = i;
                         return;
                     }

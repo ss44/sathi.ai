@@ -1,40 +1,91 @@
 import QtQuick
 import "../providers/providers.js" as Providers
+import "../providers/crypto.js" as Crypto
 
 Item {
     id: root
+    property var customProviders: []
+    
+    // Legacy properties for backward compatibility
     property string geminiApiKey: ""
     property string openaiApiKey: ""
     property string ollamaUrl: ""
     property string lmstudioUrl: ""
     property string anthropicApiKey: ""
 
-    // signal newMessage(string text, bool isError)
     signal newModels(string modelData)
-
-    onOllamaUrlChanged: {
-        Providers.setCredential("ollama", ollamaUrl);
-        Providers.fetchModels("ollama", processModels);
+    
+    property string _lastHash: ""
+    
+    Timer {
+        id: loadTimer
+        interval: 100
+        running: false
+        repeat: false
+        onTriggered: doLoadProviders()
     }
 
-    onGeminiApiKeyChanged: {
-        Providers.setCredential("gemini", geminiApiKey);
-        Providers.fetchModels("gemini", processModels);
+    onCustomProvidersChanged: loadTimer.restart()
+    onGeminiApiKeyChanged: loadTimer.restart()
+    onOpenaiApiKeyChanged: loadTimer.restart()
+    onOllamaUrlChanged: loadTimer.restart()
+    onLmstudioUrlChanged: loadTimer.restart()
+    onAnthropicApiKeyChanged: loadTimer.restart()
+    
+    Component.onCompleted: {
+        loadTimer.restart();
     }
-
-    onOpenaiApiKeyChanged: {
-        Providers.setCredential("openai", openaiApiKey);
-        Providers.fetchModels("openai", processModels);
-    }
-
-    onLmstudioUrlChanged: {
-        Providers.setCredential("lmstudio", lmstudioUrl);
-        Providers.fetchModels("lmstudio", processModels);
-    }
-
-    onAnthropicApiKeyChanged: {
-        Providers.setCredential("anthropic", anthropicApiKey);
-        Providers.fetchModels("anthropic", processModels);
+    
+    function doLoadProviders() {
+        let currentHash = JSON.stringify(customProviders) + "|" + geminiApiKey + "|" + openaiApiKey + "|" + ollamaUrl + "|" + lmstudioUrl + "|" + anthropicApiKey;
+        if (currentHash === _lastHash) {
+            console.info("[ChatBackendSettings] Settings unchanged, skipping reload");
+            return;
+        }
+        _lastHash = currentHash;
+        
+        console.info("[ChatBackendSettings] Debounced doLoadProviders triggered. Settings changed.");
+        Providers.clearProviders();
+        
+        let hasCustom = customProviders && customProviders.length > 0;
+        
+        if (hasCustom) {
+            console.info("[ChatBackendSettings] Loading " + customProviders.length + " custom providers");
+            for (let i = 0; i < customProviders.length; i++) {
+                let p = customProviders[i];
+                if (!p || !p.type) continue;
+                
+                // Decrypt credential
+                let rawCred = Crypto.decodeKey(p.credential);
+                let pid = p.id || p.name;
+                
+                Providers.addCustomProvider(p.type, p.name, rawCred, p.url, p.useGrounding, pid);
+                Providers.fetchModelsForInstance(pid, processModels);
+            }
+        } else {
+            console.info("[ChatBackendSettings] No custom providers found, checking legacy keys");
+            // Legacy loading
+            if (geminiApiKey !== "") {
+                Providers.addCustomProvider("gemini", "Gemini", geminiApiKey, null, true, "legacy_gemini");
+                Providers.fetchModelsForInstance("legacy_gemini", processModels);
+            }
+            if (openaiApiKey !== "") {
+                Providers.addCustomProvider("openai", "OpenAI", openaiApiKey, "https://api.openai.com", false, "legacy_openai");
+                Providers.fetchModelsForInstance("legacy_openai", processModels);
+            }
+            if (anthropicApiKey !== "") {
+                Providers.addCustomProvider("anthropic", "Anthropic", anthropicApiKey, null, false, "legacy_anthropic");
+                Providers.fetchModelsForInstance("legacy_anthropic", processModels);
+            }
+            if (ollamaUrl !== "") {
+                Providers.addCustomProvider("openai", "Ollama", "", ollamaUrl, false, "legacy_ollama");
+                Providers.fetchModelsForInstance("legacy_ollama", processModels);
+            }
+            if (lmstudioUrl !== "") {
+                Providers.addCustomProvider("openai", "LM Studio", "", lmstudioUrl, false, "legacy_lmstudio");
+                Providers.fetchModelsForInstance("legacy_lmstudio", processModels);
+            }
+        }
     }
 
     function processModels (models, error) {
@@ -51,7 +102,6 @@ Item {
 
     function fetchModels() {
         Providers.listModels(function(models, error) {
-             // We can ignore partial errors as listModels tries its best
              if (models) {
                  newModels(JSON.stringify(models), false);
              } else {

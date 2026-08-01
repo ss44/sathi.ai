@@ -16,7 +16,7 @@ function setUseGrounding(enabled) {
     useGrounding = enabled;
 }
 
-function request(method, url, callback, data) {
+function request(method, url, callback, data, customKey) {
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function() {
         if (xhr.readyState === XMLHttpRequest.DONE) {
@@ -40,8 +40,9 @@ function request(method, url, callback, data) {
         }
     };
     xhr.open(method, url);
-    if (apiKey) {
-        xhr.setRequestHeader("x-goog-api-key", apiKey);
+    var key = customKey ? customKey : apiKey;
+    if (key) {
+        xhr.setRequestHeader("x-goog-api-key", key);
     }
     xhr.setRequestHeader("Content-Type", "application/json");
     if (data) {
@@ -52,7 +53,7 @@ function request(method, url, callback, data) {
 }
 
 function listModels(callback) {
-    var url = "https://generativelanguage.googleapis.com/v1beta/models?key=" + apiKey;
+    var url = "https://generativelanguage.googleapis.com/v1beta/models";
     
     request("GET", url, function(response, error) {
         if (error) {
@@ -68,13 +69,16 @@ function listModels(callback) {
                 if (name.startsWith("models/")) {
                     name = name.substring(7);
                 }
-                var modelData = { "name": name };
-                if (m.displayName) {
-                    modelData["display_name"] = m.displayName;
+                
+                if (m.supportedGenerationMethods && m.supportedGenerationMethods.indexOf("generateContent") !== -1) {
+                    var modelData = { "name": name };
+                    if (m.displayName) {
+                        modelData["display_name"] = m.displayName;
+                    }
+    
+                    modelData["provider"] = "gemini";
+                    models.push(modelData);
                 }
-
-                modelData["provider"] = "gemini";
-                models.push(modelData);
             }
         }
         callback(models, null);
@@ -90,14 +94,6 @@ function sendChat(history, systemPrompt, callback) {
     // Map standard history [{role: 'user'|'model', content: ''}] to Gemini format
     var contents = [];
     
-    // Pass system prompt ?? Gemini doesn't have a strict system role in generateContent usually unless using beta features or putting it in first user message?
-    // Actually typically we put system prompt as the first message from 'user' or system_instruction in 1.5
-    // Let's use system_instruction if available or fallback to prepending.
-    // For simplicity in this plugin let's just use the previous strategy: first message is user with prompt.
-    // However, if we receive a separate systemPrompt, we should use it.
-    
-    // Note: Gemini 1.5 supports system_instruction.
-    
     for(var i=0; i<history.length; i++) {
         var item = history[i];
         contents.push({
@@ -106,8 +102,7 @@ function sendChat(history, systemPrompt, callback) {
         });
     }
 
-    var url = "https://generativelanguage.googleapis.com/v1beta/models/" + currentModel + 
-        (useGrounding ? ":generateContent" : "");
+    var url = "https://generativelanguage.googleapis.com/v1beta/models/" + currentModel + ":generateContent";
     
     var payload = {
         contents: contents
@@ -118,6 +113,12 @@ function sendChat(history, systemPrompt, callback) {
             parts: { text: systemPrompt }
         };
     }
+    
+    console.info("[Gemini] Sending chat request. Grounding enabled: " + useGrounding);
+    
+    if (useGrounding) {
+        payload.tools = [{ googleSearch: {} }];
+    }
 
     request("POST", url, function(response, error) {
         if (error) {
@@ -125,17 +126,26 @@ function sendChat(history, systemPrompt, callback) {
             return;
         }
 
-        // Extract text from response
-        // Structure: candidates[0].content.parts[0].text
-        var responseText = "";
-        if (response.candidates && response.candidates.length > 0 &&
-            response.candidates[0].content && 
-            response.candidates[0].content.parts &&
-            response.candidates[0].content.parts.length > 0) {
+        if (response.candidates && response.candidates.length > 0) {
+            var candidate = response.candidates[0];
+            var responseText = "";
             
-            responseText = response.candidates[0].content.parts[0].text;
+            if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
+                responseText = candidate.content.parts[0].text;
+            }
+            
+            if (candidate.groundingMetadata) {
+                console.info("[Gemini] Grounding metadata received: " + JSON.stringify(candidate.groundingMetadata));
+            } else if (useGrounding) {
+                console.info("[Gemini] Grounding was requested but no grounding metadata was returned by the API.");
+            }
             
             var meta = response.usageMetadata ? { promptTokens: response.usageMetadata.promptTokenCount, completionTokens: response.usageMetadata.candidatesTokenCount, totalTokens: response.usageMetadata.totalTokenCount } : {};
+            
+            if (candidate.groundingMetadata) {
+                meta.groundingMetadata = candidate.groundingMetadata;
+            }
+            
             callback(responseText, null, meta);
         } else {
             callback(null, "Empty response from API");

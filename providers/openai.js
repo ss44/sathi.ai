@@ -11,7 +11,7 @@ function setModel(model) {
     currentModel = model;
 }
 
-function request(method, url, callback, data) {
+function request(method, url, callback, data, config) {
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function() {
         if (xhr.readyState === XMLHttpRequest.DONE) {
@@ -35,8 +35,9 @@ function request(method, url, callback, data) {
         }
     };
     xhr.open(method, url);
-    if (apiKey) {
-        xhr.setRequestHeader("Authorization", "Bearer " + apiKey);
+    var key = config ? config.apiKey : apiKey;
+    if (key) {
+        xhr.setRequestHeader("Authorization", "Bearer " + key);
     }
     xhr.setRequestHeader("Content-Type", "application/json");
     if (data) {
@@ -46,8 +47,8 @@ function request(method, url, callback, data) {
     }
 }
 
-function listModels(callback) {
-    var url = "https://api.openai.com/v1/models";
+function listModels(callback, config) {
+    var url = (config && config.baseUrl) ? config.baseUrl + "/v1/models" : "https://api.openai.com/v1/models";
     
     request("GET", url, function(response, error) {
         if (error) {
@@ -61,23 +62,23 @@ function listModels(callback) {
                 var m = response.data[i];
                 var name = m.id;
                 
-                // Filter for chat models usually, but let's just list gpt models
-                if (name.indexOf("gpt") !== -1) {
+                // Allow all models for custom endpoints or just gpt for default openai
+                if ((config && config.baseUrl) || name.indexOf("gpt") !== -1 || name.indexOf("o1") !== -1 || name.indexOf("o3") !== -1) {
                      var modelData = { 
                         "name": name, 
                         "display_name": name,
-                        "provider": "openai" 
+                        "provider": config ? config.instanceName : "openai" 
                     };
                     models.push(modelData);
                 }
             }
         }
         callback(models, null);
-    });
+    }, null, config);
 }
 
-function sendChat(history, systemPrompt, callback) {
-    var url = "https://api.openai.com/v1/chat/completions";
+function sendChat(history, systemPrompt, callback, config) {
+    var url = (config && config.baseUrl) ? config.baseUrl + "/v1/chat/completions" : "https://api.openai.com/v1/chat/completions";
     
     // Map standard history to OpenAI format
     var messages = [];
@@ -100,7 +101,7 @@ function sendChat(history, systemPrompt, callback) {
     }
 
     var data = {
-        model: currentModel,
+        model: config ? config.model : currentModel,
         messages: messages
     };
 
@@ -117,5 +118,5 @@ function sendChat(history, systemPrompt, callback) {
         } else {
             callback(null, "No response content");
         }
-    }, data);
+    }, data, config);
 }
