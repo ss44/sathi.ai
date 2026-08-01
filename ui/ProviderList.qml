@@ -144,9 +144,7 @@ Column {
     }
     
     function updateProvider(index, key, value) {
-        var newProviders = providers.slice();
-        newProviders[index][key] = value;
-        providers = newProviders;
+        providers[index][key] = value;
         saveProviders();
     }
     
