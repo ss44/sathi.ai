@@ -45,6 +45,18 @@ Gemini supports internet grounding. If enabled on a Gemini provider instance:
 - The response returns `groundingMetadata`.
 - `ChatBubble.qml` intercepts this metadata, filters out duplicate URLs, and displays clickable chips below the AI's response pointing to the source articles.
 
+### 5. XHR Limitations & HTTP Client
+Since there is no `fetch` in QML, `XMLHttpRequest` is the primary network tool. Do not rewrite XHR boilerplate for every new provider; always use the shared `httpClient.js` library imported into provider implementations.
+
+### 6. Wayland/Quickshell Focus
+The `WlrKeyboardFocus.OnDemand` hack inside `Sathi.qml` manages Wayland window focus and interactivity. It dynamically sets the `customKeyboardFocus` property on the inner Quickshell popout so that users can interact with the chat widget while keeping popout stickiness behavior intact.
+
+### 7. Pricing Updates
+The `modelPricing` object is hardcoded in `providers.js`. If OpenAI, Anthropic, or Gemini change their pricing, this object must be manually updated to keep the UI cost estimates accurate.
+
+### 8. State Wrappers
+`ChatBackendChat.qml` and `ChatBackendSettings.qml` act as invisible bridge components. They wire the QML UI signals directly to the JavaScript logic (`providers.js` and `chatHistory.js`). When wiring up new functionality, add your properties and signals to these wrappers instead of dumping logic directly into visual QML components.
+
 ## Development Tips & Gotchas
 
 1. **Logging Visibility:**

@@ -75,7 +75,7 @@ function fetchModelsForInstance(instanceId, callback) {
                 models[i].id = instanceId + "|" + models[i].name;
                 loadedModels[models[i].id] = models[i];
             }
-            if (modelKey === "") {
+            if (!loadedModels[modelKey]) {
                 console.info("[Providers] Setting default model to " + models[0].id);
                 setModel(models[0].id);
             }
@@ -93,38 +93,6 @@ function fetchModelsForInstance(instanceId, callback) {
     }
 }
 
-function setMaxHistory(max) {
-    ChatHistory.setMaxHistory(max);
-}
-
-function setPersistChatHistory(enabled) {
-    ChatHistory.setPersistChatHistory(enabled);
-}
-
-function clearSavedChatHistory() {
-    ChatHistory.clearSavedChatHistory();
-}
-
-function clearChatHistory() {
-    ChatHistory.clearChatHistory();
-}
-
-function setPluginId(id) {
-    ChatHistory.setPluginId(id);
-}
-
-function setPluginService(service) {
-    ChatHistory.setPluginService(service);
-}
-
-function saveChatHistory() {
-    ChatHistory.saveChatHistory();
-}
-
-function loadChatHistory() {
-    return ChatHistory.loadChatHistory();
-}
-
 function setModel(model) {
     if (!model) return;
     console.info("[Providers] Setting current model to: " + model);
@@ -132,17 +100,7 @@ function setModel(model) {
 }
 
 function currentModel() {
-    console.info("[Providers] currentModel requested. current modelKey is: '" + modelKey + "'");
     var cModel = loadedModels[modelKey];
-    
-    // Fallback if modelKey is invalid but we have loaded models
-    if (!cModel && Object.keys(loadedModels).length > 0) {
-        var firstKey = Object.keys(loadedModels)[0];
-        console.info("[Providers] currentModel: modelKey '" + modelKey + "' not found, falling back to '" + firstKey + "'");
-        modelKey = firstKey;
-        cModel = loadedModels[modelKey];
-    }
-    
     if (cModel) {
         console.info("[Providers] currentModel returning model: " + cModel.name + " (" + cModel.provider + ")");
     } else {
