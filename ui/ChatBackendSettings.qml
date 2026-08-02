@@ -59,7 +59,7 @@ Item {
                 let rawCred = Crypto.decodeKey(p.credential);
                 let pid = p.id || p.name;
                 
-                Providers.addCustomProvider(p.type, p.name, rawCred, p.url, p.useGrounding, pid);
+                Providers.addCustomProvider(p.type, p.name, rawCred, p.url, p.useGrounding, pid, p.modelFilter);
                 Providers.fetchModelsForInstance(pid, processModels);
             }
         } else {
