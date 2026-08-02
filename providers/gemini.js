@@ -1,4 +1,5 @@
 .pragma library
+.import "httpClient.js" as HttpClient
 
 var apiKey = "";
 var currentModel = "";
@@ -16,46 +17,14 @@ function setUseGrounding(enabled) {
     useGrounding = enabled;
 }
 
-function request(method, url, callback, data, customKey) {
-    var xhr = new XMLHttpRequest();
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState === XMLHttpRequest.DONE) {
-            if (xhr.status === 200) {
-                try {
-                    var response = JSON.parse(xhr.responseText);
-                    callback(response, null);
-                } catch (e) {
-                    callback(null, "Failed to parse response: " + e.message);
-                }
-            } else {
-                var errorMsg = "HTTP Error: " + xhr.status;
-                try {
-                     var errJson = JSON.parse(xhr.responseText);
-                     if (errJson.error && errJson.error.message) {
-                         errorMsg += " - " + errJson.error.message;
-                     }
-                } catch(e) {}
-                callback(null, errorMsg);
-            }
-        }
-    };
-    xhr.open(method, url);
-    var key = customKey ? customKey : apiKey;
-    if (key) {
-        xhr.setRequestHeader("x-goog-api-key", key);
-    }
-    xhr.setRequestHeader("Content-Type", "application/json");
-    if (data) {
-        xhr.send(JSON.stringify(data));
-    } else {
-        xhr.send();
-    }
-}
-
 function listModels(callback) {
     var url = "https://generativelanguage.googleapis.com/v1beta/models";
+    var headers = {};
+    if (apiKey) {
+        headers["x-goog-api-key"] = apiKey;
+    }
     
-    request("GET", url, function(response, error) {
+    HttpClient.request("GET", url, function(response, error) {
         if (error) {
             callback(null, error);
             return;
@@ -82,7 +51,7 @@ function listModels(callback) {
             }
         }
         callback(models, null);
-    });
+    }, null, headers);
 }
 
 function sendChat(history, systemPrompt, callback) {
@@ -120,7 +89,12 @@ function sendChat(history, systemPrompt, callback) {
         payload.tools = [{ googleSearch: {} }];
     }
 
-    request("POST", url, function(response, error) {
+    var headers = {};
+    if (apiKey) {
+        headers["x-goog-api-key"] = apiKey;
+    }
+
+    HttpClient.request("POST", url, function(response, error) {
         if (error) {
             callback(null, error);
             return;
@@ -150,5 +124,5 @@ function sendChat(history, systemPrompt, callback) {
         } else {
             callback(null, "Empty response from API");
         }
-    }, payload);
+    }, payload, headers);
 }

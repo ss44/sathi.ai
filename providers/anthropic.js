@@ -1,4 +1,5 @@
 .pragma library
+.import "httpClient.js" as HttpClient
 
 var apiKey = "";
 var currentModel = "";
@@ -11,46 +12,16 @@ function setModel(model) {
     currentModel = model;
 }
 
-function request(method, url, callback, data) {
-    var xhr = new XMLHttpRequest();
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState === XMLHttpRequest.DONE) {
-            if (xhr.status === 200) {
-                try {
-                    var response = JSON.parse(xhr.responseText);
-                    callback(response, null);
-                } catch (e) {
-                    callback(null, "Failed to parse response: " + e.message);
-                }
-            } else {
-                var errorMsg = "HTTP Error: " + xhr.status;
-                try {
-                     var errJson = JSON.parse(xhr.responseText);
-                     if (errJson.error && errJson.error.message) {
-                         errorMsg += " - " + errJson.error.message;
-                     }
-                } catch(e) {}
-                callback(null, errorMsg);
-            }
-        }
-    };
-    xhr.open(method, url);
-    if (apiKey) {
-        xhr.setRequestHeader("x-api-key", apiKey);
-    }
-    xhr.setRequestHeader("anthropic-version", "2023-06-01");
-    xhr.setRequestHeader("Content-Type", "application/json");
-    if (data) {
-        xhr.send(JSON.stringify(data));
-    } else {
-        xhr.send();
-    }
-}
-
 function listModels(callback) {
     var url = "https://api.anthropic.com/v1/models";
+    var headers = {
+        "anthropic-version": "2023-06-01"
+    };
+    if (apiKey) {
+        headers["x-api-key"] = apiKey;
+    }
     
-    request("GET", url, function(response, error) {
+    HttpClient.request("GET", url, function(response, error) {
         if (error) {
             callback(null, error);
             return;
@@ -68,8 +39,8 @@ function listModels(callback) {
                 models.push(modelData);
             }
         }
-        callback(models, null);
-    });
+            callback(models, null);
+    }, null, headers);
 }
 
 function sendChat(history, systemPrompt, callback) {
@@ -99,8 +70,15 @@ function sendChat(history, systemPrompt, callback) {
     if (systemPrompt) {
         data.system = systemPrompt;
     }
+    
+    var headers = {
+        "anthropic-version": "2023-06-01"
+    };
+    if (apiKey) {
+        headers["x-api-key"] = apiKey;
+    }
 
-    request("POST", url, function(response, error) {
+    HttpClient.request("POST", url, function(response, error) {
         if (error) {
             callback(null, error);
             return;
@@ -113,5 +91,5 @@ function sendChat(history, systemPrompt, callback) {
         } else {
             callback(null, "No response content");
         }
-    }, data);
+    }, data, headers);
 }

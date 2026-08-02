@@ -1,4 +1,5 @@
 .pragma library
+.import "httpClient.js" as HttpClient
 
 var apiKey = "";
 var currentModel = "";
@@ -11,46 +12,15 @@ function setModel(model) {
     currentModel = model;
 }
 
-function request(method, url, callback, data, config) {
-    var xhr = new XMLHttpRequest();
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState === XMLHttpRequest.DONE) {
-            if (xhr.status === 200) {
-                try {
-                    var response = JSON.parse(xhr.responseText);
-                    callback(response, null);
-                } catch (e) {
-                    callback(null, "Failed to parse response: " + e.message);
-                }
-            } else {
-                var errorMsg = "HTTP Error: " + xhr.status;
-                try {
-                     var errJson = JSON.parse(xhr.responseText);
-                     if (errJson.error && errJson.error.message) {
-                         errorMsg += " - " + errJson.error.message;
-                     }
-                } catch(e) {}
-                callback(null, errorMsg);
-            }
-        }
-    };
-    xhr.open(method, url);
-    var key = config ? config.apiKey : apiKey;
-    if (key) {
-        xhr.setRequestHeader("Authorization", "Bearer " + key);
-    }
-    xhr.setRequestHeader("Content-Type", "application/json");
-    if (data) {
-        xhr.send(JSON.stringify(data));
-    } else {
-        xhr.send();
-    }
-}
-
 function listModels(callback, config) {
     var url = (config && config.baseUrl) ? config.baseUrl + "/v1/models" : "https://api.openai.com/v1/models";
+    var key = config ? config.apiKey : apiKey;
+    var headers = {};
+    if (key) {
+        headers["Authorization"] = "Bearer " + key;
+    }
     
-    request("GET", url, function(response, error) {
+    HttpClient.request("GET", url, function(response, error) {
         if (error) {
             callback(null, error);
             return;
@@ -74,7 +44,7 @@ function listModels(callback, config) {
             }
         }
         callback(models, null);
-    }, null, config);
+    }, null, headers);
 }
 
 function sendChat(history, systemPrompt, callback, config) {
@@ -105,7 +75,13 @@ function sendChat(history, systemPrompt, callback, config) {
         messages: messages
     };
 
-    request("POST", url, function(response, error) {
+    var key = config ? config.apiKey : apiKey;
+    var headers = {};
+    if (key) {
+        headers["Authorization"] = "Bearer " + key;
+    }
+
+    HttpClient.request("POST", url, function(response, error) {
         if (error) {
             callback(null, error);
             return;
@@ -118,5 +94,5 @@ function sendChat(history, systemPrompt, callback, config) {
         } else {
             callback(null, "No response content");
         }
-    }, data, config);
+    }, data, headers);
 }

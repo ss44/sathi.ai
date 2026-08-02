@@ -1,6 +1,7 @@
 import QtQuick
 
 import "../providers/providers.js" as Providers
+import "../chatHistory.js" as ChatHistory
 
 Item {
     id: root
@@ -26,11 +27,11 @@ Item {
     }
 
     onMaxHistoryChanged: {
-        Providers.setMaxHistory(maxHistory);
+        ChatHistory.setMaxHistory(maxHistory);
     }
 
     onPersistChatHistoryChanged: {
-        Providers.setPersistChatHistory(persistChatHistory);
+        ChatHistory.setPersistChatHistory(persistChatHistory);
         tryToLoadChatHistory();       
     }
 
@@ -61,12 +62,12 @@ Item {
     }
 
     onPluginIdChanged: {
-        Providers.setPluginId(pluginId);
+        ChatHistory.setPluginId(pluginId);
         tryToLoadChatHistory()
     }
 
     onPluginServiceChanged: {
-        Providers.setPluginService(pluginService);
+        ChatHistory.setPluginService(pluginService);
         tryToLoadChatHistory()
     }
 
@@ -86,7 +87,7 @@ Item {
         }
 
         try {
-            chatHistoryLoaded(Providers.loadChatHistory());
+            chatHistoryLoaded(ChatHistory.loadChatHistory());
         } catch (e) {
             console.error("Error loading chat history: " + e);
         }
@@ -99,7 +100,7 @@ Item {
 
     function clearChat() {
         console.debug("Clearing chat history as requested.");
-        Providers.clearChatHistory();
+        ChatHistory.clearChatHistory();
         chatModel.clear();
     }
 }
