@@ -143,7 +143,10 @@ DankRectangle {
         TextEdit {
             id: msgText
             visible: !root.useRichView
-            text: root.isThinking ? root.currentThinkingPhrase : root.displayedText.replace(/\n/g, "  \n")
+            // HACK: Qt's TextEdit with MarkdownText format ignores `palette.link` and `<style>` blocks for link colors.
+            // To ensure links dynamically match our theme rather than defaulting to solid blue, we use a regex to 
+            // convert markdown links `[text](url)` into HTML links with an explicit font color wrapper.
+            text: root.isThinking ? root.currentThinkingPhrase : root.displayedText.replace(/\[([^\]]+)\]\(([^)]+)\)/g, `<a href="$2"><font color="${Theme.primary}">$1</font></a>`).replace(/\n/g, "  \n")
             textFormat: TextEdit.MarkdownText
             readOnly: true
             selectByMouse: true
@@ -185,7 +188,10 @@ DankRectangle {
                         TextEdit {
                             // width: parent.width // TextEdit inside Layout needs careful width handling if wrapping
                             Layout.fillWidth: true
-                            text: modelData.content
+                            // HACK: Qt's TextEdit with MarkdownText format ignores `palette.link` and `<style>` blocks for link colors.
+                            // To ensure links dynamically match our theme rather than defaulting to solid blue, we use a regex to 
+                            // convert markdown links `[text](url)` into HTML links with an explicit font color wrapper.
+                            text: modelData.content.replace(/\[([^\]]+)\]\(([^)]+)\)/g, `<a href="$2"><font color="${Theme.primary}">$1</font></a>`)
                             textFormat: TextEdit.MarkdownText
                             readOnly: true
                             selectByMouse: true
