@@ -319,6 +319,17 @@ Column {
                     }
                 }
                 
+                DankTextField {
+                    width: parent.width
+                    placeholderText: "Model Filter (comma separated words, e.g. Flash, Latest, Lite)"
+                    text: modelData.modelFilter || ""
+                    onTextChanged: {
+                        if (root.loaded && text !== (modelData.modelFilter || "")) {
+                            root.updateProvider(index, "modelFilter", text);
+                        }
+                    }
+                }
+                
                 // Ground with Search checkbox specifically for Gemini
                 DankToggle {
                     width: parent.width

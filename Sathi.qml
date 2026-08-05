@@ -206,6 +206,11 @@ PluginComponent {
         ollamaUrl: pluginData.ollamaUrl || ""
         lmstudioUrl: pluginData.lmstudioUrl || ""
 
+        onClearingModels: () => {
+            console.debug("Clearing existing models before reload");
+            availableAisModel.clear();
+        }
+
         onNewModels: (models, isError) => {
             try {
                 var data = JSON.parse(models);

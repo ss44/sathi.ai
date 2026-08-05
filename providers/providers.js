@@ -23,7 +23,7 @@ function clearProviders() {
     loadedModels = {};
 }
 
-function addCustomProvider(type, name, credential, url, useGrounding, id) {
+function addCustomProvider(type, name, credential, url, useGrounding, id, modelFilter) {
     var pid = id || name;
     console.info("[Providers] Adding custom provider instance: '" + name + "' (id: " + pid + ") of type: '" + type + "' (credential length: " + (credential ? credential.length : 0) + ")");
     customProviderInstances[pid] = {
@@ -32,7 +32,8 @@ function addCustomProvider(type, name, credential, url, useGrounding, id) {
         name: name,
         credential: credential,
         url: url,
-        useGrounding: useGrounding
+        useGrounding: useGrounding,
+        modelFilter: modelFilter || ""
     };
 }
 
@@ -67,20 +68,34 @@ function fetchModelsForInstance(instanceId, callback) {
         
         console.info("[Providers] Fetched " + (models ? models.length : 0) + " models for " + instance.name);
         if (models && models.length > 0) {
-            for (var i = 0; i < models.length; i++) {
-                models[i].provider = instanceId;
-                models[i].providerName = instance.name;
+            var filterTerms = instance.modelFilter ? instance.modelFilter.toLowerCase().split(',').map(s => s.trim()).filter(s => s.length > 0) : [];
+
+            // Normalize models to ensure they always have a display_name
+            models.forEach(m => {
+                if (!m.display_name) {
+                    m.display_name = m.displayName || m.name;
+                }
+            });
+
+            var filteredModels = filterTerms.length > 0 
+                ? models.filter(m => filterTerms.some(term => m.display_name.toLowerCase().includes(term)))
+                : models;
+
+            filteredModels.forEach(m => {
+                m.provider = instanceId;
+                m.providerName = instance.name;
                 // Avoid model name collisions between different provider instances
                 // by using a unique internal ID, but preserving the original name for the API call
-                models[i].id = instanceId + "|" + models[i].name;
-                loadedModels[models[i].id] = models[i];
-            }
-            if (!loadedModels[modelKey]) {
-                console.info("[Providers] Setting default model to " + models[0].id);
-                setModel(models[0].id);
+                m.id = instanceId + "|" + m.name;
+                loadedModels[m.id] = m;
+            });
+            
+            if (!loadedModels[modelKey] && filteredModels.length > 0) {
+                console.info("[Providers] Setting default model to " + filteredModels[0].id);
+                setModel(filteredModels[0].id);
             }
             console.info("[Providers] Currently " + Object.keys(loadedModels).length + " total loaded models across all providers");
-            callback(models, null);
+            callback(filteredModels, null);
         } else {
             callback([], null);
         }

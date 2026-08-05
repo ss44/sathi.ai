@@ -14,12 +14,13 @@ Item {
     property string anthropicApiKey: ""
 
     signal newModels(string modelData)
+    signal clearingModels()
     
     property string _lastHash: ""
     
     Timer {
         id: loadTimer
-        interval: 100
+        interval: 2000 // Increased to 2 seconds for a better debounce when typing filters or keys
         running: false
         repeat: false
         onTriggered: doLoadProviders()
@@ -46,6 +47,7 @@ Item {
         
         console.info("[ChatBackendSettings] Debounced doLoadProviders triggered. Settings changed.");
         Providers.clearProviders();
+        clearingModels();
         
         let hasCustom = customProviders && customProviders.length > 0;
         
@@ -59,7 +61,7 @@ Item {
                 let rawCred = Crypto.decodeKey(p.credential);
                 let pid = p.id || p.name;
                 
-                Providers.addCustomProvider(p.type, p.name, rawCred, p.url, p.useGrounding, pid);
+                Providers.addCustomProvider(p.type, p.name, rawCred, p.url, p.useGrounding, pid, p.modelFilter);
                 Providers.fetchModelsForInstance(pid, processModels);
             }
         } else {
