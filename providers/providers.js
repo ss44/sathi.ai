@@ -70,13 +70,15 @@ function fetchModelsForInstance(instanceId, callback) {
         if (models && models.length > 0) {
             var filterTerms = instance.modelFilter ? instance.modelFilter.toLowerCase().split(',').map(s => s.trim()).filter(s => s.length > 0) : [];
 
+            // Normalize models to ensure they always have a display_name
+            models.forEach(m => {
+                if (!m.display_name) {
+                    m.display_name = m.displayName || m.name;
+                }
+            });
+
             var filteredModels = filterTerms.length > 0 
-                ? models.filter(m => filterTerms.some(term => {
-                    var n = m.name ? m.name.toLowerCase() : "";
-                    var d = m.display_name ? m.display_name.toLowerCase() : "";
-                    var dn = m.displayName ? m.displayName.toLowerCase() : "";
-                    return n.includes(term) || d.includes(term) || dn.includes(term);
-                }))
+                ? models.filter(m => filterTerms.some(term => m.display_name.toLowerCase().includes(term)))
                 : models;
 
             filteredModels.forEach(m => {
