@@ -23,7 +23,59 @@ PluginComponent {
     property string systemPrompt: pluginData.systemPrompt || "You are a helpful assistant. Answer concisely. The chat client you are running in is small so keep answers brief. For context the current date is " + (new Date()).toDateString() + "." 
     property string pendingInputText: ""
     property string resizeCorner: pluginData.resizeCorner || "right"
+    property bool popoutSticky: false
+    // Hack to find the PluginPopout instance since it's an internal child of PluginComponent
+    // and we cannot modify PluginComponent source code.
+    property Item _popoutInstance: null
+    
+    Timer {
+        running: true
+        repeat: false
+        interval: 100
+        onTriggered: root.findPopoutInstance()
+    }
 
+    onPopoutStickyChanged: {
+        if (root._popoutInstance) {
+            // Setting backgroundInteractive to false disables the mouse area in the background window,
+            // effectively making the popout 'sticky' because background clicks are not caught.
+            root._popoutInstance.backgroundInteractive = !root.popoutSticky
+            
+            // Should release exclusive focus so we can interact with other windows
+            if (root.popoutSticky) {
+                root._popoutInstance.customKeyboardFocus = WlrKeyboardFocus.OnDemand;
+            } else {
+                root._popoutInstance.customKeyboardFocus = null;
+            }
+        }
+    }
+
+    function findPopoutInstance() {
+        if (root._popoutInstance) return;
+        
+        // Search through children for an object that looks like the PluginPopout
+        // It should have properties like 'shouldBeVisible', 'backgroundInteractive', 'pluginContent'
+        for (var i = 0; i < root.data.length; i++) {
+            var child = root.data[i];
+            if (child && 
+                child.toString().indexOf("PluginPopout") !== -1 ||
+                (child.hasOwnProperty("shouldBeVisible") && child.hasOwnProperty("backgroundInteractive"))
+               ) {
+                root._popoutInstance = child;
+
+                // Prevents the popout from losing its content when hidden, which seems to be an issue with nested popouts or something related to the way PluginComponent manages its children.
+                if (root._popoutInstance.contentLoader) {
+                    try {
+                        root._popoutInstance.contentLoader.active = true;
+                        console.debug("Sathi: Forced popout content to stay active (nested)");
+                    } catch (e) { console.warn(e) }
+                }
+
+                console.debug("Sathi: Found popout instance via hack");
+                break;
+            }
+        }
+    }
 
     horizontalBarPill: Component {
         Row {
@@ -267,14 +319,14 @@ PluginComponent {
                     aiModel: root.aiModel
                     isModelAvailable: root.isModelAvailable
                     pendingInputText: root.pendingInputText
-
+                    popoutSticky: root.popoutSticky
                     popoutHeight: root.popoutHeight
                     pluginId: root.pluginId
                     pluginService: root.pluginService
 
                     onProcessMessage: (message) => root.processMessage(message)
                     onClearChat: () => backendChat.clearChat()
-
+                    onToggleSticky: () => root.popoutSticky = !root.popoutSticky
                     onCheckModelAvailability: () => root.checkModelAvailability()
                     onPendingInputTextChanged: root.pendingInputText = pendingInputText
                     onAiModelChanged: root.aiModel = aiModel

@@ -12,14 +12,14 @@ Column {
     property string aiModel
     property bool isModelAvailable
     property string pendingInputText
-
+    property bool popoutSticky
     property real popoutHeight
     property string pluginId
     property var pluginService
 
     signal processMessage(string message)
     signal clearChat()
-
+    signal toggleSticky()
     signal checkModelAvailability()
 
     function focusInput() {
@@ -132,7 +132,23 @@ Column {
                 }
             }
 
+            DankActionButton {
+                anchors.top: parent.top
+                anchors.margins: Theme.spacingXS
+                
+                visible: true
+                
+                iconName: "push_pin"
+                buttonSize: 32
+                iconSize: 18
 
+                iconColor: columnBottomSection.popoutSticky ? Theme.surfaceVariantText : Theme.surfaceText
+                backgroundColor: columnBottomSection.popoutSticky ? Theme.surfaceVariant : "transparent"
+                
+                onClicked: () => {
+                    columnBottomSection.toggleSticky()
+                }
+            }
 
 
         }
