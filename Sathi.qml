@@ -121,6 +121,13 @@ PluginComponent {
             message.substring(0, 100) + (message.length > 100 ? "..." : "")
         ]
         running: false
+        
+        onExited: exitCode => {
+            if (exitCode !== 0) {
+                // notify-send failed or not found, fallback to ToastService
+                ToastService.showInfo("Sathi.AI", message.substring(0, 100) + (message.length > 100 ? "..." : ""));
+            }
+        }
     }
 
     onAvailableAisModelChanged: {
