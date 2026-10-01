@@ -151,7 +151,7 @@ PluginComponent {
         
         // For some reason we can't just check chatPopout.visible directly here?
         // So we're using internalProps as a workaround..
-        if (internalProps.isPopoutVisible && !hiddenNotificationProcess.running) {
+        if (internalProps.isPopoutVisible) {
             return
         }
 
