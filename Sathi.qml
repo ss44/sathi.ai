@@ -115,16 +115,16 @@ PluginComponent {
     Process {
         id: hiddenNotificationProcess
         property string message: ""
-        command: ["notify-send", 
-            "-i", Qt.resolvedUrl('./assets/star.png').toString().replace("file://", ""), 
-            "SathiAI",
-            message.substring(0, 100) + (message.length > 100 ? "..." : "")
+        command: ["dms", "notify",
+            "Sathi.AI",
+            message.substring(0, 100) + (message.length > 100 ? "..." : ""),
+            "--icon", Qt.resolvedUrl('./assets/star.png').toString().replace("file://", "")
         ]
         running: false
         
         onExited: exitCode => {
             if (exitCode !== 0) {
-                // notify-send failed or not found, fallback to ToastService
+                // dms notify failed, fallback to ToastService
                 ToastService.showInfo("Sathi.AI", message.substring(0, 100) + (message.length > 100 ? "..." : ""));
             }
         }
