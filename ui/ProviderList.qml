@@ -163,7 +163,7 @@ Column {
     }
 
     StyledText {
-        text: "Add multiple instances of supported AI providers. Keys are encrypted to prevent casual snooping."
+        text: "Add multiple instances of supported AI providers. Keys are obfuscated to prevent casual snooping."
         font.pixelSize: Theme.fontSizeSmall
         color: Theme.surfaceVariantText
         width: parent.width

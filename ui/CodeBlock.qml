@@ -10,7 +10,7 @@ Rectangle {
     property string code: ""
     property string language: ""
 
-    color: "#2b2b2b" // Dark background for code
+    color: Theme.surfaceContainerHighest // Dark background for code
     radius: Theme.cornerRadius
     border.color: Theme.surfaceVariant
     border.width: 1
@@ -25,7 +25,7 @@ Rectangle {
         // Header
         Rectangle {
             Layout.fillWidth: true
-            height: 30
+            height: Theme.fontSizeLarge * 2
             color: Theme.surfaceContainerHighest
             topLeftRadius: Theme.cornerRadius
             topRightRadius: Theme.cornerRadius
@@ -45,8 +45,8 @@ Rectangle {
 
                 Rectangle {
                     width: 60
-                    height: 24
-                    radius: 4
+                    height: Theme.fontSizeLarge * 1.5
+                    radius: Theme.cornerRadius
                     color: copyArea.pressed ? Theme.primaryContainer : "transparent"
                     border.color: copyArea.containsMouse ? Theme.primary : "transparent"
 
@@ -81,7 +81,7 @@ Rectangle {
             text: Syntax.highlight(root.code, root.language)
             font.family: "Monospace"
             font.pixelSize: Theme.fontSizeMedium
-            color: "#e6e6e6" 
+            color: Theme.surfaceText 
             readOnly: true
             selectByMouse: true
             wrapMode: TextEdit.Wrap
