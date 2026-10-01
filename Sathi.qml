@@ -112,6 +112,17 @@ PluginComponent {
         property bool isPopoutVisible: false
     }
 
+    Process {
+        id: hiddenNotificationProcess
+        property string message: ""
+        command: ["notify-send", 
+            "-i", Qt.resolvedUrl('./assets/star.png').toString().replace("file://", ""), 
+            "SathiAI",
+            message.substring(0, 100) + (message.length > 100 ? "..." : "")
+        ]
+        running: false
+    }
+
     onAvailableAisModelChanged: {
         root.checkModelAvailability();
     }
@@ -133,12 +144,13 @@ PluginComponent {
         
         // For some reason we can't just check chatPopout.visible directly here?
         // So we're using internalProps as a workaround..
-        if (internalProps.isPopoutVisible) {
+        if (internalProps.isPopoutVisible && !hiddenNotificationProcess.running) {
             return
         }
 
         console.debug("Showing hidden message notification:", message)
-        ToastService.showInfo("Sathi.AI", message.substring(0, 100) + (message.length > 100 ? "..." : ""))
+        hiddenNotificationProcess.message = message
+        hiddenNotificationProcess.running = true
     }
 
     ChatBackendChat {
