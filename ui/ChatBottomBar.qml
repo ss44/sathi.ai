@@ -84,32 +84,15 @@ Column {
             maxPopupHeight: popoutHeight * 0.6
 
             width: parent.width - rowBottomRowActions.width - btnSettings.width - (Theme.spacingS * 2)
-            textRole: "display_name"
-            valueRole: "id"
-            displayText: currentIndex === -1 ? "Select an AI Model..." : currentText
-
-            function updateIndex() {
-                for (var i = 0; i < availableAisModel.count; i++) {
-                    if (availableAisModel.get(i).id === columnBottomSection.aiModel) {
-                        currentIndex = i;
-                        return;
-                    }
-                }
-                currentIndex = -1;
-            }
-
-            Component.onCompleted: updateIndex()
-
-            Connections {
-                target: availableAisModel
-                function onCountChanged() { cbModelSelector.updateIndex() }
-            }
-
-            onActivated: {
-                if (pluginService) {
-                    columnBottomSection.aiModel = currentValue
-                    pluginService.savePluginData(pluginId, "aiModel", currentValue)
-                    columnBottomSection.checkModelAvailability()
+            
+            // Map the internal component's currentValueId to our columnBottomSection.aiModel
+            currentValueId: columnBottomSection.aiModel
+            
+            onCurrentValueIdChanged: {
+                if (currentValueId !== columnBottomSection.aiModel && pluginService) {
+                    columnBottomSection.aiModel = currentValueId;
+                    pluginService.savePluginData(pluginId, "aiModel", currentValueId);
+                    columnBottomSection.checkModelAvailability();
                 }
             }
         }

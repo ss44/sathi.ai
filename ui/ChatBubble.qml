@@ -127,7 +127,7 @@ DankRectangle {
         anchors.margins: Theme.spacingL
         spacing: Theme.spacingM
 
-        BusyIndicator {
+        DankSpinner {
             id: thinkingAnim
             visible: root.isThinking
             running: root.isThinking
@@ -275,7 +275,7 @@ DankRectangle {
                             StyledText {
                                 text: "public"
                                 font.family: "Material Symbols Rounded"
-                                font.pixelSize: 14
+                                font.pixelSize: Theme.fontSizeSmall
                                 color: Theme.primary
                                 Layout.alignment: Qt.AlignVCenter
                             }
@@ -378,26 +378,8 @@ DankRectangle {
         buttonSize: 32
         iconSize: 18
         
-        HoverHandler { id: detailsHover }
-        
-        ToolTip {
-            id: detailsToolTip
-            delay: 200
-            visible: detailsHover.hovered
+        DankTooltip {
             text: "Prompt Tokens: " + (root.metadata.promptTokens || 0) + "\nCompletion Tokens: " + (root.metadata.completionTokens || 0) + "\nTotal Tokens: " + (root.metadata.totalTokens || 0) + "\nEstimated Cost: " + (root.metadata.estimatedCost ? "$" + root.metadata.estimatedCost.toFixed(6) : "N/A")
-            
-            background: Rectangle {
-                color: Theme.surfaceContainerHigh
-                radius: Theme.cornerRadius
-                border.color: Theme.outlineVariant
-                border.width: 1
-            }
-            
-            contentItem: Text {
-                text: detailsToolTip.text
-                color: Theme.surfaceText
-                font.pixelSize: Theme.fontSizeSmall
-            }
         }
         
         onClicked: {}
