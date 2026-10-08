@@ -2,7 +2,7 @@
   "id": "sathiAi",
   "name": "Sathi.AI",
   "description": "A simple multi model ai client to use with your dank desktop. Use it with Ollama, Gemini, Anthropic, OpenAI, or any OpenAI-compatible endpoint like LM Studio. Keys not included.",
-  "version": "1.11.0",
+  "version": "1.13.0",
   "author": "Shinda Singh",
   "icon": "widgets",
   "type": "widget",
