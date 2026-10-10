@@ -240,7 +240,6 @@ function sendMessage(text, callback) {
                     metadata.estimatedCost = c;
                 }
             }
-            ChatHistory.addMessage("model", response, metadata);
         } else if (!error) {
             console.warn("[Providers] sendChat returned neither response nor error");
         }
@@ -251,7 +250,7 @@ function sendMessage(text, callback) {
     if (instance.type === 'openai') {
         provider.setModel(cModel.name);
         console.info("[Providers] Calling sendChat on provider " + instance.type);
-        provider.sendChat(ChatHistory.getHistory(), systemPrompt, cb, {
+        return provider.sendChat(ChatHistory.getHistory(), systemPrompt, cb, {
             baseUrl: instance.url,
             apiKey: instance.credential,
             model: cModel.name
@@ -259,7 +258,7 @@ function sendMessage(text, callback) {
     } else if (instance.type === 'gemini') {
         provider.setModel(cModel.name);
         console.info("[Providers] Calling sendChat on provider " + instance.type);
-        provider.sendChat(ChatHistory.getHistory(), systemPrompt, cb, {
+        return provider.sendChat(ChatHistory.getHistory(), systemPrompt, cb, {
             credential: instance.credential,
             useGrounding: instance.useGrounding,
             model: cModel.name
@@ -268,7 +267,7 @@ function sendMessage(text, callback) {
         provider.setApiKey(instance.credential);
         provider.setModel(cModel.name);
         console.info("[Providers] Calling sendChat on provider " + instance.type);
-        provider.sendChat(ChatHistory.getHistory(), systemPrompt, cb);
+        return provider.sendChat(ChatHistory.getHistory(), systemPrompt, cb);
     }
 }
 

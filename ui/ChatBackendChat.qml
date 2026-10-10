@@ -51,14 +51,39 @@ Item {
         Providers.setSystemPrompt(systemPrompt);
     }
 
+    property var currentRequest: null
+    property int currentRequestId: 0
+
+    function abortCurrentRequest() {
+        root.currentRequestId = root.currentRequestId + 1;
+        var req = root.currentRequest;
+        root.currentRequest = null;
+        if (req && typeof req.abort === 'function') {
+            try {
+                req.abort();
+            } catch (e) {
+                console.error("Error aborting XHR: " + e);
+            }
+        }
+    }
+
     function sendMessage(text) {
-        Providers.sendMessage(text, function(response, error, metadata) {
+        root.currentRequestId = root.currentRequestId + 1;
+        var reqId = root.currentRequestId;
+        var req = Providers.sendMessage(text, function(response, error, metadata) {
+            if (reqId !== root.currentRequestId) {
+                console.debug("Ignoring response from aborted request. reqId: " + reqId + " current: " + root.currentRequestId);
+                return;
+            }
+            root.currentRequest = null;
             if (error) {
                 newMessage("Error: " + error, true, {});
             } else {
+                ChatHistory.addMessage("model", response, metadata);
                 newMessage(response, false, metadata);
             }
         });
+        root.currentRequest = req;
     }
 
     onPluginIdChanged: {

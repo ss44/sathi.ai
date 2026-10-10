@@ -54,10 +54,14 @@ function sendChat(history, systemPrompt, callback) {
         // Our internal 'model' role -> 'assistant' for anthropic
         var r = (item.role === 'model') ? 'assistant' : item.role;
         
-        messages.push({
-            role: r,
-            content: item.content
-        });
+        if (messages.length > 0 && messages[messages.length - 1].role === r) {
+            messages[messages.length - 1].content += "\n\n" + item.content;
+        } else {
+            messages.push({
+                role: r,
+                content: item.content
+            });
+        }
     }
 
     var data = {
@@ -78,7 +82,7 @@ function sendChat(history, systemPrompt, callback) {
         headers["x-api-key"] = apiKey;
     }
 
-    HttpClient.request("POST", url, function(response, error) {
+    return HttpClient.request("POST", url, function(response, error) {
         if (error) {
             callback(null, error);
             return;

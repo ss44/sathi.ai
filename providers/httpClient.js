@@ -37,4 +37,5 @@ function request(method, url, callback, data, headers) {
     } else {
         xhr.send();
     }
+    return xhr;
 }

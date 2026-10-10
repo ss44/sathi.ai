@@ -59,9 +59,8 @@ Column {
     Row {
         id: bottomModelSelectorRow
         width: parent.width
-        height: cbModelSelector.implicitHeight + Theme.spacingXL
+        height: cbModelSelector.implicitHeight
         spacing: Theme.spacingS
-        anchors.bottomMargin: Theme.spacingXL
 
         DankActionButton {
             id: btnSettings
@@ -104,12 +103,9 @@ Column {
 
             anchors.verticalCenter: parent.verticalCenter
             spacing: Theme.spacingS
-            anchors.top: parent.top
-
 
             DankActionButton {
-                anchors.top: parent.top
-                anchors.margins: Theme.spacingXS
+                anchors.verticalCenter: parent.verticalCenter
                 
                 visible: true
                 
@@ -133,8 +129,7 @@ Column {
             }
 
             DankActionButton {
-                anchors.top: parent.top
-                anchors.margins: Theme.spacingXS
+                anchors.verticalCenter: parent.verticalCenter
                 
                 visible: true
                 
