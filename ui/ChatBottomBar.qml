@@ -30,7 +30,9 @@ Column {
     anchors.left: parent.left
     anchors.right: parent.right
     anchors.bottom: parent.bottom
-    anchors.margins: Theme.spacingL
+    anchors.leftMargin: Theme.spacingL
+    anchors.rightMargin: Theme.spacingL
+    anchors.bottomMargin: Theme.spacingXS
     visible: availableAisModel.count > 0
 
     spacing: Theme.spacingXS
@@ -98,7 +100,7 @@ Column {
         
         Row {
             id: rowBottomRowActions
-            width: Theme.fontSizeLarge * 4 + Theme.spacingS
+            width: Theme.fontSizeLarge * 4 + Theme.spacingS + 25
             height: cbModelSelector.implicitHeight
 
             anchors.verticalCenter: parent.verticalCenter
