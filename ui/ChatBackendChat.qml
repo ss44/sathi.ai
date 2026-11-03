@@ -17,6 +17,9 @@ Item {
     property string pluginId
     property var pluginService
 
+    property bool smartContext: false
+    property string fastModel: ""
+
     signal newMessage(string text, bool isError, var metadata)
     signal chatHistoryLoaded(var chatHistory)
 
@@ -33,6 +36,14 @@ Item {
     onPersistChatHistoryChanged: {
         ChatHistory.setPersistChatHistory(persistChatHistory);
         tryToLoadChatHistory();       
+    }
+
+    onSmartContextChanged: {
+        Providers.setSmartContext(smartContext);
+    }
+
+    onFastModelChanged: {
+        Providers.setFastModel(fastModel);
     }
 
     onModelChanged: {

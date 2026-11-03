@@ -174,6 +174,9 @@ PluginComponent {
         systemPrompt: root.systemPrompt
         maxHistory: pluginData.maxMessageHistory || 20
 
+        smartContext: pluginData.smartContext === true
+        fastModel: pluginData.smartContextModel || ""
+
         pluginId: root.pluginId
         pluginService: root.pluginService
 
