@@ -48,8 +48,11 @@ Column {
         model: fastModels
         emptyText: "No models loaded yet..."
 
-        onCurrentValueChanged: (value) => {
-            if (!root._settings) {
+        // Fires after AiSelector's internal handler has updated currentValueId
+        // (DDropdown assigns currentValue before emitting valueChanged, so reacting
+        // to currentValueChanged would persist the stale selection).
+        onCurrentValueIdChanged: {
+            if (!root._settings || selector.currentValueId === root.savedValue) {
                 return;
             }
             root.savedValue = selector.currentValueId;
