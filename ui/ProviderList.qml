@@ -1,6 +1,6 @@
 import QtQuick
 import qs.Common
-import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Modals.Common
 import "../providers/crypto.js" as Crypto
 
@@ -177,7 +177,7 @@ Column {
         
         property string selectedType: "openai"
 
-        DankDropdown {
+        DDropdown {
             width: parent.width - btnAdd.width - Theme.spacingS
             text: "Provider Type"
             currentValue: {
@@ -193,10 +193,10 @@ Column {
             }
         }
 
-        DankButton {
+        DButton {
             id: btnAdd
             width: 150
-            height: 36
+            buttonHeight: Theme.buttonHeightS
             anchors.verticalCenter: parent.verticalCenter
             text: "Add Provider"
             onClicked: {
@@ -237,7 +237,7 @@ Column {
                         anchors.verticalCenter: parent.verticalCenter
                     }
                     
-                    DankActionButton {
+                    DActionButton {
                         id: removeBtn
                         iconName: "delete"
                         buttonSize: 32
@@ -259,7 +259,7 @@ Column {
                     }
                 }
                 
-                DankTextField {
+                DTextField {
                     width: parent.width
                     placeholderText: "Provider Display Name"
                     text: modelData.name
@@ -270,7 +270,7 @@ Column {
                     }
                 }
                 
-                DankTextField {
+                DTextField {
                     width: parent.width
                     visible: modelData.type === "openai"
                     placeholderText: "Base URL (e.g. https://api.openai.com or http://localhost:11434)"
@@ -289,7 +289,7 @@ Column {
                     property bool showKey: false
                     property bool isPassword: true
                     
-                    DankTextField {
+                    DTextField {
                         width: parent.width - (parent.isPassword ? btnReveal.width + Theme.spacingS : 0)
                         placeholderText: "API Key (leave blank for local unenforced models)"
                         text: Crypto.decodeKey(modelData.credential)
@@ -305,11 +305,11 @@ Column {
                         }
                     }
                     
-                    DankActionButton {
+                    DActionButton {
                         id: btnReveal
                         iconName: parent.showKey ? "visibility_off" : "visibility"
                         visible: parent.isPassword
-                        buttonSize: 36
+                        buttonSize: Theme.buttonHeightS
                         iconSize: 18
                         anchors.verticalCenter: parent.verticalCenter
                         
@@ -319,7 +319,7 @@ Column {
                     }
                 }
                 
-                DankTextField {
+                DTextField {
                     width: parent.width
                     placeholderText: "Model Filter (comma separated words, e.g. Flash, Latest, Lite)"
                     text: modelData.modelFilter || ""
@@ -331,7 +331,7 @@ Column {
                 }
                 
                 // Ground with Search checkbox specifically for Gemini
-                DankToggle {
+                DToggle {
                     width: parent.width
                     visible: modelData.type === "gemini"
                     text: "Ground with Google Search"

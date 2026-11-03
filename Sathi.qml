@@ -6,7 +6,7 @@ import Quickshell.Io
 
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Modules.Plugins
 import qs.Modals.Common
 import "ui"
@@ -361,6 +361,8 @@ PluginComponent {
                     popoutHeight: root.popoutHeight
                     pluginId: root.pluginId
                     pluginService: root.pluginService
+                    resizeCorner: root.resizeCorner
+                    resizeGripSize: resizeGrip.gripSize
 
                     onProcessMessage: (message) => root.processMessage(message)
                     onClearChat: () => backendChat.clearChat()
@@ -371,6 +373,7 @@ PluginComponent {
                 }
 
                 ResizeGrip {
+                    id: resizeGrip
                     resizeCorner: root.resizeCorner
                     popoutWidth: root.popoutWidth
                     popoutHeight: root.popoutHeight

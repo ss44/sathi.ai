@@ -2,7 +2,7 @@ import QtQuick
 import Quickshell
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 
 Column {
     id: root
@@ -34,7 +34,7 @@ Column {
         wrapMode: Text.WordWrap
     }
 
-    DankButton {
+    DButton {
         anchors.horizontalCenter: parent.horizontalCenter
         text: "Configure in Settings"
         onClicked: Quickshell.execDetached(["dms", "ipc", "call", "settings", "openWith", "plugins"])                    
