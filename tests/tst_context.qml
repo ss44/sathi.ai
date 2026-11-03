@@ -364,6 +364,7 @@ TestCase {
         compare(result.metadata.routing[0], "direct");
         compare(result.metadata.promptTokens, 5);
         verify(result.metadata.estimatedCost > 0, "cost merged from leg");
+        compare(result.metadata.bucketName, "seed topic", "bucket name attached for sticky assignment");
 
         // leg 1 + background summarizer (block crossed the 4-message threshold)
         compare(saved.sendRawCalls.length, 2);
@@ -395,9 +396,10 @@ TestCase {
 
         saved.script = [{ response: "Hi there [[NEED_CONTEXT: none]]" }];
         var result = { called: false };
-        Context.orchestrate("hello", function(response) {
+        Context.orchestrate("hello", function(response, error, metadata) {
             result.called = true;
             result.response = response;
+            result.metadata = metadata;
         });
 
         verify(result.called, "orchestration runs without pre-existing buckets");
@@ -405,6 +407,7 @@ TestCase {
         compare(saved.sendRawCalls.length, 1, "no summarizer: fresh block below threshold");
         compare(ChatHistory.getBlocks().length, 1, "first block created from the empty index");
         compare(ChatHistory.lastUsedBlock().summary, "hello");
+        compare(result.metadata.bucketName, "hello", "new bootstrap block names the bucket");
     }
 
     function test_orchestrate_fetches_requested_buckets() {
@@ -437,6 +440,7 @@ TestCase {
 
         compare(result.metadata.promptTokens, 30, "tokens merged across legs");
         compare(result.metadata.routing[0], block.id);
+        compare(result.metadata.bucketName, "seed topic", "requested bucket name attached");
         compare(ChatHistory.getHistory().length, 8, "negotiation legs ephemeral");
 
         var refreshed = ChatHistory.findBlock(block.id);
@@ -523,9 +527,10 @@ TestCase {
         var blockCountBefore = ChatHistory.getBlocks().length;
         saved.script = [{ response: "Brand new topic answer [[NEED_CONTEXT: new]]" }];
         var result = { called: false };
-        Context.orchestrate("completely new question", function(response) {
+        Context.orchestrate("completely new question", function(response, error, metadata) {
             result.called = true;
             result.response = response;
+            result.metadata = metadata;
         });
 
         verify(result.called);
@@ -533,6 +538,7 @@ TestCase {
         compare(saved.sendRawCalls.length, 1, "no leg 2 for new topic");
         compare(ChatHistory.getBlocks().length, blockCountBefore + 1, "new block spawned");
         compare(ChatHistory.lastUsedBlock().summary, "completely new question");
+        compare(result.metadata.bucketName, "completely new question", "new topic bucket named");
     }
 
     // ---------- context.js: routing status ----------

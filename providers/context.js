@@ -313,41 +313,42 @@ function orchestrate(text, callback) {
     function finish(answer, routing, forceNew) {
         console.info("[Context] Answer ready (routing: " + (routing.length > 0 ? routing.join(",") : "direct") +
                      ", tokens: " + acc.promptTokens + " in / " + acc.completionTokens + " out across legs)");
-        var meta = mergedMetadata(routing.length > 0 ? routing : ["direct"]);
-        // Batch persistence: one write for the whole exchange + assignment.
         ChatHistory.beginBatch();
+        var meta;
         try {
+            var resolved = resolveExchangeBlock(routing, forceNew);
+            meta = mergedMetadata(routing.length > 0 ? routing : ["direct"]);
+            meta.bucketName = resolved.block.summary || resolved.block.id;
+            console.debug("[Context] Exchange bucket: " + meta.bucketName);
             var userMsg = ChatHistory.addMessage("user", text);
             var modelMsg = ChatHistory.addMessage("model", answer, meta);
-            assignExchange(userMsg, modelMsg, routing, forceNew);
+            ChatHistory.assignMessages(resolved.block.id, [userMsg.id, modelMsg.id]);
+            console.info("[Context] Exchange assigned to block " + resolved.block.id + " (" + resolved.reason + ")");
+            maybeSummarize(resolved.block.id);
         } finally {
             ChatHistory.endBatch();
         }
         callback(answer, null, meta);
     }
 
-    function assignExchange(userMsg, modelMsg, routing, forceNew) {
-        var blockId = null;
+    function resolveExchangeBlock(routing, forceNew) {
+        var block = null;
         var reason = "new";
         // Per protocol, the first requested bucket owns the topic.
         if (routing.length > 0 && ChatHistory.findBlock(routing[0])) {
-            blockId = routing[0];
+            block = ChatHistory.findBlock(routing[0]);
             reason = "requested";
         } else if (!forceNew) {
-            var last = ChatHistory.lastUsedBlock();
-            if (last) {
-                blockId = last.id;
+            block = ChatHistory.lastUsedBlock();
+            if (block) {
                 reason = "sticky";
             }
         }
-        if (!blockId) {
-            var summary = userMsg.content.substring(0, 80);
-            blockId = ChatHistory.createBlock(summary).id;
-            console.info("[Context] Created new context block " + blockId);
+        if (!block) {
+            block = ChatHistory.createBlock(text.substring(0, 80));
+            console.info("[Context] Created new context block " + block.id);
         }
-        ChatHistory.assignMessages(blockId, [userMsg.id, modelMsg.id]);
-        console.info("[Context] Exchange assigned to block " + blockId + " (" + reason + ")");
-        maybeSummarize(blockId);
+        return { block: block, reason: reason };
     }
 
     function leg2(routing, retriesLeft) {
