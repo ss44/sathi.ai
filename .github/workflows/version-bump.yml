@@ -1,0 +1,167 @@
+name: Weekly Version Bump
+
+on:
+  schedule:
+    # Every Monday at 06:00 UTC, after the new ISO week starts.
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: version-bump
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    name: Release ISO week version
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      RELEASE_BRANCH: ${{ github.event.repository.default_branch }}
+
+    steps:
+      - name: Check out the default branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+          # Set RELEASE_TOKEN when branch protection blocks GITHUB_TOKEN.
+          token: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Calculate the weekly version
+        id: version
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          import subprocess
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          now = datetime.now(timezone.utc)
+          iso_year, iso_week, _ = now.isocalendar()
+
+          # Scheme: 1.<two-digit ISO year>.<ISO week>, e.g. 1.26.45.
+          # The week is intentionally not zero-padded because SemVer numeric
+          # identifiers must not contain leading zeroes.
+          version = f"1.{iso_year % 100}.{iso_week}"
+          target = (1, iso_year % 100, iso_week)
+
+          plugin = json.loads(Path("plugin.json").read_text(encoding="utf-8"))
+          current_text = str(plugin.get("version", ""))
+
+          def parse(value):
+              match = re.fullmatch(r"v?(\d+)\.(\d+)\.(\d+)", value.strip())
+              return tuple(int(part) for part in match.groups()) if match else None
+
+          current = parse(current_text)
+          if current is None:
+              raise SystemExit(
+                  f"plugin.json version is not plain semantic versioning: {current_text!r}"
+              )
+          if current[0] != 1:
+              raise SystemExit(
+                  f"Expected major version 1 for the 1.<year>.<week> scheme, got {current_text!r}"
+              )
+
+          local_tag = subprocess.run(
+              ["git", "tag", "--list", version],
+              check=True,
+              capture_output=True,
+              text=True,
+          ).stdout.strip()
+          remote_tag = subprocess.run(
+              ["git", "ls-remote", "--tags", "origin", f"refs/tags/{version}"],
+              check=True,
+              capture_output=True,
+              text=True,
+          ).stdout.strip()
+          tag_exists = bool(local_tag or remote_tag)
+
+          skip = tag_exists or current > target
+          update = current < target and not tag_exists
+
+          if tag_exists:
+              reason = f"Tag {version} already exists; nothing to release this week."
+          elif current > target:
+              reason = (
+                  f"plugin.json is already {current_text}, newer than this week's "
+                  f"{version}; refusing to downgrade."
+              )
+          elif update:
+              reason = f"Preparing {current_text} -> {version}"
+          else:
+              reason = f"plugin.json already contains {version}; creating the missing tag."
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"current={current_text}\n")
+              output.write(f"version={version}\n")
+              output.write(f"skip={'true' if skip else 'false'}\n")
+              output.write(f"update={'true' if update else 'false'}\n")
+
+          print(reason)
+          PY
+
+      - name: Update plugin.json
+        if: steps.version.outputs.update == 'true'
+        env:
+          NEXT_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          from pathlib import Path
+
+          path = Path("plugin.json")
+          text = path.read_text(encoding="utf-8")
+          version = os.environ["NEXT_VERSION"]
+
+          # Replace only the version value so the rest of the file's
+          # formatting is preserved.
+          updated, replacements = re.subn(
+              r'("version"\s*:\s*")[^"]*(")',
+              lambda match: f"{match.group(1)}{version}{match.group(2)}",
+              text,
+              count=1,
+          )
+          if replacements != 1:
+              raise SystemExit("Could not find exactly one version field in plugin.json")
+
+          data = json.loads(updated)
+          if data.get("version") != version:
+              raise SystemExit("plugin.json version did not update correctly")
+
+          path.write_text(updated, encoding="utf-8")
+          print(f"Set plugin.json version to {version}")
+          PY
+
+      - name: Commit, tag, and push
+        if: steps.version.outputs.skip != 'true'
+        env:
+          NEXT_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          if git diff --quiet -- plugin.json; then
+            echo "plugin.json already contains ${NEXT_VERSION}; tagging the current commit."
+          else
+            git add plugin.json
+            git commit -m "RELEASE: bump version to ${NEXT_VERSION}"
+          fi
+
+          git tag -a "${NEXT_VERSION}" -m "Release ${NEXT_VERSION}"
+
+          # Push the commit and tag together so a partial push cannot leave a
+          # tag without its matching commit.
+          git push --atomic origin "HEAD:${RELEASE_BRANCH}" "refs/tags/${NEXT_VERSION}"
