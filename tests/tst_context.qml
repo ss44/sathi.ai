@@ -13,7 +13,8 @@ TestCase {
         script: [],
         pending: null,
         savedData: {},
-        writeCounts: {}
+        writeCounts: {},
+        statuses: []
     })
 
     function mockPluginService() {
@@ -65,7 +66,8 @@ TestCase {
             calculateCost: function(name, p, c) { return 0.001; },
             getSystemPrompt: function() { return "SYS"; },
             getMainModelName: function() { return "test-main"; },
-            sendLegacy: mockLegacy
+            sendLegacy: mockLegacy,
+            onStatus: function(status) { saved.statuses.push(status); }
         });
         Context.setFastModel("fast|model");
         Context.setEnabled(false);
@@ -75,6 +77,7 @@ TestCase {
         saved.pending = null;
         saved.savedData = {};
         saved.writeCounts = {};
+        saved.statuses = [];
     }
 
     function seedRoutingState() {
@@ -530,6 +533,44 @@ TestCase {
         compare(saved.sendRawCalls.length, 1, "no leg 2 for new topic");
         compare(ChatHistory.getBlocks().length, blockCountBefore + 1, "new block spawned");
         compare(ChatHistory.lastUsedBlock().summary, "completely new question");
+    }
+
+    // ---------- context.js: routing status ----------
+
+    function test_status_sequence_direct_answer() {
+        seedRoutingState();
+        saved.script = [{ response: "Hi there [[NEED_CONTEXT: none]]" }];
+        Context.orchestrate("hello", function() {});
+        compare(saved.statuses.length, 1);
+        compare(saved.statuses[0], "Checking which context matters");
+    }
+
+    function test_status_sequence_fetch_then_answer() {
+        var block = seedRoutingState();
+        saved.script = [
+            { response: "checking [[NEED_CONTEXT: " + block.id + "]]" },
+            { response: "Final answer" }
+        ];
+        Context.orchestrate("question", function() {});
+        compare(saved.statuses.length, 2);
+        compare(saved.statuses[0], "Checking which context matters");
+        compare(saved.statuses[1], "Fetching relevant earlier context");
+    }
+
+    function test_status_sequence_fallback() {
+        seedRoutingState();
+        saved.script = [{ error: "boom" }];
+        Context.orchestrate("hello", function() {});
+        compare(saved.statuses.length, 2);
+        compare(saved.statuses[0], "Checking which context matters");
+        compare(saved.statuses[1], "Answering with full history");
+    }
+
+    function test_status_not_emitted_when_disabled() {
+        for (var i = 0; i < 6; i++) {
+            ChatHistory.addMessage("user", "filler" + i);
+        }
+        compare(saved.statuses.length, 0, "no statuses without routing");
     }
 
     // ---------- context.js: summarizer ----------

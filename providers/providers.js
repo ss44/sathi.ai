@@ -18,6 +18,9 @@ var systemPrompt = "";
 // customProviderInstances stores { type, name, credential }
 var customProviderInstances = {};
 
+// UI sink for smart context routing status (set by ChatBackendChat).
+var routingStatusSink = null;
+
 Context.init({
     sendRaw: sendRaw,
     calculateCost: calculateCost,
@@ -26,8 +29,19 @@ Context.init({
         var m = currentModel();
         return m ? m.name : "";
     },
-    sendLegacy: sendMessageLegacy
+    sendLegacy: sendMessageLegacy,
+    onStatus: emitRoutingStatus
 });
+
+function setRoutingStatusSink(sink) {
+    routingStatusSink = typeof sink === "function" ? sink : null;
+}
+
+function emitRoutingStatus(status) {
+    if (routingStatusSink) {
+        routingStatusSink(status);
+    }
+}
 
 function setSmartContext(enabled) {
     Context.setEnabled(enabled);
@@ -324,6 +338,8 @@ function sendMessage(text, callback) {
         return Context.orchestrate(text, callback);
     }
 
+    console.debug("[Providers] Smart context idle (enabled: " + Context.isEnabled() +
+                  ", history: " + ChatHistory.getHistory().length + " msgs) — using legacy send");
     return sendMessageLegacy(text, callback);
 }
 

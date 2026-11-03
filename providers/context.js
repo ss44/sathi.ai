@@ -8,7 +8,7 @@
 // ephemeral turn. Negotiation legs are never persisted.
 
 // Injected dependencies (avoids circular imports with providers.js):
-// { sendRaw, calculateCost, getSystemPrompt, sendLegacy }
+// { sendRaw, calculateCost, getSystemPrompt, sendLegacy, onStatus }
 var deps = null;
 
 var smartContextEnabled = false;
@@ -47,6 +47,18 @@ function init(dependencies) {
     deps = dependencies;
 }
 
+// Routing status for the UI (shown in the thinking bubble while negotiating).
+function emitStatus(status) {
+    console.info("[Context] Status: " + status);
+    if (deps && typeof deps.onStatus === "function") {
+        try {
+            deps.onStatus(status);
+        } catch (e) {
+            console.warn("[Context] Status handler failed: " + e);
+        }
+    }
+}
+
 function setEnabled(enabled) {
     console.info("[Context] Smart context " + (enabled ? "enabled" : "disabled"));
     smartContextEnabled = enabled === true;
@@ -75,6 +87,8 @@ function maybeSummarize(blockId) {
     }
     var count = block.messageIds.length;
     if (count < summarizeMinMessages || count - block.lastSummaryCount < summarizeNewThreshold) {
+        console.debug("[Context] Summarizer skipped for " + blockId + " (" + count + " msgs, last summarized at " +
+                      block.lastSummaryCount + ")");
         return;
     }
     summarizeBlock(blockId);
@@ -215,6 +229,10 @@ function orchestrate(text, callback) {
 
     var handle = {
         abort: function() {
+            if (aborted) {
+                return;
+            }
+            console.info("[Context] Routing aborted by user");
             aborted = true;
             var req = activeReq;
             activeReq = null;
@@ -268,6 +286,7 @@ function orchestrate(text, callback) {
 
     function fallback(reason) {
         console.warn("[Context] Falling back to legacy history send. Reason: " + reason);
+        emitStatus("Answering with full history");
         if (!deps || !deps.sendLegacy) {
             callback(null, "Smart context routing failed");
             return;
@@ -292,6 +311,8 @@ function orchestrate(text, callback) {
     }
 
     function finish(answer, routing, forceNew) {
+        console.info("[Context] Answer ready (routing: " + (routing.length > 0 ? routing.join(",") : "direct") +
+                     ", tokens: " + acc.promptTokens + " in / " + acc.completionTokens + " out across legs)");
         var meta = mergedMetadata(routing.length > 0 ? routing : ["direct"]);
         // Batch persistence: one write for the whole exchange + assignment.
         ChatHistory.beginBatch();
@@ -307,12 +328,17 @@ function orchestrate(text, callback) {
 
     function assignExchange(userMsg, modelMsg, routing, forceNew) {
         var blockId = null;
+        var reason = "new";
         // Per protocol, the first requested bucket owns the topic.
         if (routing.length > 0 && ChatHistory.findBlock(routing[0])) {
             blockId = routing[0];
+            reason = "requested";
         } else if (!forceNew) {
             var last = ChatHistory.lastUsedBlock();
-            blockId = last ? last.id : null;
+            if (last) {
+                blockId = last.id;
+                reason = "sticky";
+            }
         }
         if (!blockId) {
             var summary = userMsg.content.substring(0, 80);
@@ -320,7 +346,7 @@ function orchestrate(text, callback) {
             console.info("[Context] Created new context block " + blockId);
         }
         ChatHistory.assignMessages(blockId, [userMsg.id, modelMsg.id]);
-        console.info("[Context] Exchange assigned to block " + blockId);
+        console.info("[Context] Exchange assigned to block " + blockId + " (" + reason + ")");
         maybeSummarize(blockId);
     }
 
@@ -328,6 +354,10 @@ function orchestrate(text, callback) {
         if (aborted) {
             return;
         }
+        console.info("[Context] Leg 2: fetching " + routing.length + " bucket(s) " + routing.join(",") +
+                     (retriesLeft < leg2MaxRetries ? " (retry)" : ""));
+        emitStatus("Fetching relevant earlier context");
+
         var sections = [];
         for (var i = 0; i < routing.length; i++) {
             var block = ChatHistory.findBlock(routing[i]);
@@ -366,14 +396,21 @@ function orchestrate(text, callback) {
         if (aborted) {
             return;
         }
+        var history = ChatHistory.getHistory();
+        console.info("[Context] Leg 1: routing message (" + text.length + " chars) with " +
+                     ChatHistory.getBlocks().length + " buckets, history " + history.length + " msgs");
+        emitStatus("Checking which context matters");
+
         var systemContent = (deps.getSystemPrompt ? deps.getSystemPrompt() : "") + PROTOCOL_HEADER;
         var messages = [{ role: "system", content: systemContent }];
-        var history = ChatHistory.getHistory();
         var start = Math.max(0, history.length - recentTailCount);
         for (var i = start; i < history.length; i++) {
             messages.push({ role: history[i].role, content: history[i].content });
         }
-        messages.push({ role: "user", content: manifestUserMessage(buildManifest(), text) });
+        var manifest = buildManifest();
+        console.debug("[Context] Leg 1 manifest: " + manifest.split("\n").length + " line(s), tail " +
+                      (history.length - start) + " msg(s)");
+        messages.push({ role: "user", content: manifestUserMessage(manifest, text) });
 
         sendRawSafe(messages, null, function(response, error) {
             if (aborted) {
@@ -388,6 +425,7 @@ function orchestrate(text, callback) {
             if (parsed.type === "need") {
                 leg2(parsed.ids, leg2MaxRetries);
             } else {
+                console.debug("[Context] Direct answer (" + parsed.text.length + " chars), requestedNew: " + parsed.requestedNew);
                 finish(parsed.text, [], parsed.requestedNew === true);
             }
         });
