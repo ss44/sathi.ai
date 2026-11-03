@@ -11,6 +11,7 @@ DankRectangle {
     property bool isUser: false
     property bool shouldAnimate: false
     property bool isThinking: false 
+    property string thinkingStatus: "" 
     property string displayedText: ""
     property string currentThinkingPhrase: "Thinking..."
     property var contentBlocks: []
@@ -56,7 +57,12 @@ DankRectangle {
     signal animationCompleted()
 
     function updateThinkingPhrase() {
-        root.currentThinkingPhrase = ThinkingPhrases.getRandomPhrase() + "...";
+        // A live routing status (smarter context) pins the phrase while active.
+        if (root.thinkingStatus !== "") {
+            root.currentThinkingPhrase = root.thinkingStatus + "...";
+        } else {
+            root.currentThinkingPhrase = ThinkingPhrases.getRandomPhrase() + "...";
+        }
     }
 
     Timer {
@@ -65,6 +71,12 @@ DankRectangle {
         repeat: true
         running: root.isThinking
         onTriggered: root.updateThinkingPhrase()
+    }
+
+    onThinkingStatusChanged: {
+        if (root.isThinking) {
+            root.updateThinkingPhrase();
+        }
     }
 
     Timer {
@@ -376,7 +388,17 @@ DankRectangle {
         iconName: "info"
         buttonSize: 32
         iconSize: 18
-        tooltipText: "Prompt: " + (root.metadata.promptTokens || 0) + " · Completion: " + (root.metadata.completionTokens || 0) + " · Total: " + (root.metadata.totalTokens || 0) + " · Cost: " + (root.metadata.estimatedCost ? "$" + root.metadata.estimatedCost.toFixed(6) : "N/A")
+        tooltipText: {
+            var tip = "Prompt: " + (root.metadata.promptTokens || 0) +
+                      " · Completion: " + (root.metadata.completionTokens || 0) +
+                      " · Total: " + (root.metadata.totalTokens || 0) +
+                      " · Cost: " + (root.metadata.estimatedCost ? "$" + root.metadata.estimatedCost.toFixed(6) : "N/A");
+            if (root.metadata.bucketName) {
+                var name = root.metadata.bucketName;
+                tip += " · Context: " + (name.length > 48 ? name.substring(0, 48) + "…" : name);
+            }
+            return tip;
+        }
         
         onClicked: {}
     }

@@ -13,6 +13,14 @@ function setModel(model) {
     currentModel = model;
 }
 
+function getModel() {
+    return currentModel;
+}
+
+function getApiKey() {
+    return apiKey;
+}
+
 function setUseGrounding(enabled) {
     useGrounding = enabled;
 }
@@ -65,10 +73,16 @@ function sendChat(history, systemPrompt, callback) {
     
     for(var i=0; i<history.length; i++) {
         var item = history[i];
-        contents.push({
-            role: item.role,
-            parts: [{ text: item.content }]
-        });
+        // Gemini requires strict user/model alternation: merge consecutive
+        // same-role entries (e.g. a trailing user message left by an aborted send).
+        if (contents.length > 0 && contents[contents.length - 1].role === item.role) {
+            contents[contents.length - 1].parts[0].text += "\n\n" + item.content;
+        } else {
+            contents.push({
+                role: item.role,
+                parts: [{ text: item.content }]
+            });
+        }
     }
 
     var url = "https://generativelanguage.googleapis.com/v1beta/models/" + currentModel + ":generateContent";

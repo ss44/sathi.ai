@@ -56,6 +56,17 @@ PluginSettings {
     }
 
     ToggleSetting {
+        settingKey: "smartContext"
+        label: "Smarter Context"
+        description: "Organizes older chat turns into summarized context buckets. The AI is asked which buckets it needs instead of always sending the full history, cutting token usage on long chats."
+        defaultValue: false
+    }
+
+    FastModelSelector {
+        width: parent.width
+    }
+
+    ToggleSetting {
         settingKey: "showMessageAlerts"
         label: "Show Message Alerts"
         description: "Enable or disable message alerts when the chat popout is hidden."

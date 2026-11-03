@@ -17,8 +17,23 @@ Item {
     property string pluginId
     property var pluginService
 
+    property bool smartContext: false
+    property string fastModel: ""
+
     signal newMessage(string text, bool isError, var metadata)
     signal chatHistoryLoaded(var chatHistory)
+    signal routingStatus(string status)
+
+    Component.onCompleted: {
+        Providers.setRoutingStatusSink(function(status) {
+            console.debug("[ChatBackendChat] Routing status: " + status);
+            root.routingStatus(status);
+        });
+    }
+
+    Component.onDestruction: {
+        Providers.setRoutingStatusSink(null);
+    }
 
     // We only ever want to try and load chat once.
     QtObject {
@@ -33,6 +48,14 @@ Item {
     onPersistChatHistoryChanged: {
         ChatHistory.setPersistChatHistory(persistChatHistory);
         tryToLoadChatHistory();       
+    }
+
+    onSmartContextChanged: {
+        Providers.setSmartContext(smartContext);
+    }
+
+    onFastModelChanged: {
+        Providers.setFastModel(fastModel);
     }
 
     onModelChanged: {
@@ -79,7 +102,11 @@ Item {
             if (error) {
                 newMessage("Error: " + error, true, {});
             } else {
-                ChatHistory.addMessage("model", response, metadata);
+                // Smart context orchestration persists both turns itself; adding the
+                // model message here would duplicate it in history.
+                if (!metadata || metadata.smartContext !== true) {
+                    ChatHistory.addMessage("model", response, metadata);
+                }
                 newMessage(response, false, metadata);
             }
         });
