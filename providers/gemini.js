@@ -94,7 +94,7 @@ function sendChat(history, systemPrompt, callback) {
         headers["x-goog-api-key"] = apiKey;
     }
 
-    HttpClient.request("POST", url, function(response, error) {
+    return HttpClient.request("POST", url, function(response, error) {
         if (error) {
             callback(null, error);
             return;

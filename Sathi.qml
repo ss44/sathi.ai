@@ -58,8 +58,8 @@ PluginComponent {
         for (var i = 0; i < root.data.length; i++) {
             var child = root.data[i];
             if (child && 
-                child.toString().indexOf("PluginPopout") !== -1 ||
-                (child.hasOwnProperty("shouldBeVisible") && child.hasOwnProperty("backgroundInteractive"))
+                (child.toString().indexOf("PluginPopout") !== -1 ||
+                ("shouldBeVisible" in child && "backgroundInteractive" in child))
                ) {
                 root._popoutInstance = child;
 
@@ -148,10 +148,15 @@ PluginComponent {
         if (!pluginData.showMessageAlerts) {
             return;
         }
+
+        var isVisible = false;
+        if (root._popoutInstance && "shouldBeVisible" in root._popoutInstance) {
+            isVisible = root._popoutInstance.shouldBeVisible;
+        } else {
+            isVisible = internalProps.isPopoutVisible;
+        }
         
-        // For some reason we can't just check chatPopout.visible directly here?
-        // So we're using internalProps as a workaround..
-        if (internalProps.isPopoutVisible) {
+        if (isVisible) {
             return
         }
 
@@ -250,6 +255,20 @@ PluginComponent {
 
     function processMessage(message) {
         if (message === "") return;
+
+        if (root.isLoading) {
+            try {
+                backendChat.abortCurrentRequest();
+            } catch (e) {
+                console.error("Error aborting request: " + e);
+            }
+            if (chatModel.count > 0) {
+                 var last = chatModel.get(chatModel.count - 1);
+                 if (last && last.isThinking === true) {
+                     chatModel.remove(chatModel.count - 1);
+                 }
+            }
+        }
 
         chatModel.append(createChatEntry(message, true, false, false, {}));
         root.pruneUiHistory();

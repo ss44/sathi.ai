@@ -81,7 +81,7 @@ function sendChat(history, systemPrompt, callback, config) {
         headers["Authorization"] = "Bearer " + key;
     }
 
-    HttpClient.request("POST", url, function(response, error) {
+    return HttpClient.request("POST", url, function(response, error) {
         if (error) {
             callback(null, error);
             return;
