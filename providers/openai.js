@@ -12,6 +12,10 @@ function setModel(model) {
     currentModel = model;
 }
 
+function getModel() {
+    return currentModel;
+}
+
 function listModels(callback, config) {
     var url = (config && config.baseUrl) ? config.baseUrl + "/v1/models" : "https://api.openai.com/v1/models";
     var key = config ? config.apiKey : apiKey;

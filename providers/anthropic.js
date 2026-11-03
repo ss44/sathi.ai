@@ -12,6 +12,10 @@ function setModel(model) {
     currentModel = model;
 }
 
+function getModel() {
+    return currentModel;
+}
+
 function listModels(callback) {
     var url = "https://api.anthropic.com/v1/models";
     var headers = {

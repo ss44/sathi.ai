@@ -13,6 +13,10 @@ function setModel(model) {
     currentModel = model;
 }
 
+function getModel() {
+    return currentModel;
+}
+
 function setUseGrounding(enabled) {
     useGrounding = enabled;
 }
