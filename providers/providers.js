@@ -279,10 +279,16 @@ function sendRaw(messages, modelRef, callback) {
 
     console.info("[Providers] sendRaw via " + instance.type + " model " + model.name);
     var prevModel = typeof provider.getModel === "function" ? provider.getModel() : null;
+    var prevKey = typeof provider.getApiKey === "function" ? provider.getApiKey() : null;
 
     var cb = function(response, error, metadata) {
+        // Restore shared module state: the legacy Gemini path relies on it, so a
+        // fast-model request on a different instance must not leak its credential.
         if (prevModel !== null && typeof provider.setModel === "function") {
             provider.setModel(prevModel);
+        }
+        if (prevKey !== null && typeof provider.setApiKey === "function") {
+            provider.setApiKey(prevKey);
         }
         callback(response, error, metadata);
     };
