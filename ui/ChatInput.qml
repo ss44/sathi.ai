@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Controls
 import qs.Common
-import qs.Widgets
 
 TextArea {
     id: root
@@ -16,27 +15,22 @@ TextArea {
     wrapMode: TextEdit.Wrap
     
     background: Rectangle {
-        implicitHeight: 40
-        color: Theme.surfaceContainerHigh
+        implicitHeight: Theme.fieldHeight
+        color: Theme.chipSurface
         radius: Theme.cornerRadius
-        border.width: 1
-        border.color: root.activeFocus ? Theme.primary : "transparent"
+        border.width: root.activeFocus ? Theme.outlineWidthFocused : Theme.outlineWidth
+        border.color: root.activeFocus ? Theme.primary : Theme.outlineVariant
 
-        // We implement our own placeholder to control its position
+        // Keep the placeholder inside the field; the box does not have a notched outline label
         Text {
             id: placeholderLabel
             text: "Type a message..."
-            color: root.activeFocus ? Theme.primary : Theme.surfaceText
-            font.pixelSize: (root.activeFocus || root.length > 0) ? Theme.fontSizeSmall : Theme.fontSizeMedium
-            
-            // Animation for position and font size
-            Behavior on y { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
-            Behavior on font.pixelSize { NumberAnimation { duration: 150 } }
-            Behavior on x { NumberAnimation { duration: 150 } }
+            color: root.activeFocus ? Theme.primary : Theme.onSurfaceVariant
+            font.pixelSize: Theme.fontSizeMedium
+            visible: root.length === 0
 
-            // Position logic
-            x: (root.activeFocus || root.length > 0) ? Theme.spacingM : Theme.spacingM
-            y: (root.activeFocus || root.length > 0) ? -height - (Theme.spacingXS / 2) : (parent.height - height) / 2
+            x: Theme.spacingM
+            y: (parent.height - height) / 2
         }
     }
 

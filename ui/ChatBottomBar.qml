@@ -2,10 +2,10 @@ import QtQuick
 import Quickshell
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Modals.Common
 
-Column { 
+Column {
     id: columnBottomSection
 
     property var availableAisModel
@@ -16,11 +16,17 @@ Column {
     property real popoutHeight
     property string pluginId
     property var pluginService
+    property string resizeCorner: "right"
+    property real resizeGripSize: 0
 
     signal processMessage(string message)
     signal clearChat()
     signal toggleSticky()
     signal checkModelAvailability()
+
+    readonly property real resizeGripInset: Math.max(0, resizeGripSize - Theme.spacingL)
+    readonly property real leftInset: resizeCorner === "left" ? resizeGripInset : 0
+    readonly property real rightInset: resizeCorner === "right" ? resizeGripInset : 0
 
     function focusInput() {
         chatInput.forceActiveFocus();
@@ -35,11 +41,9 @@ Column {
     anchors.bottomMargin: Theme.spacingXS
     visible: availableAisModel.count > 0
 
-    spacing: Theme.spacingXS
-    
+    spacing: Theme.spacingM
     width: parent.width
 
-    // Dank Textfield at the bottom for user input
     ChatInput {
         id: chatInput
         width: parent.width
@@ -47,33 +51,27 @@ Column {
         onTextChanged: columnBottomSection.pendingInputText = text
 
         onAccepted: {
-            // Handle the input text here
-            console.debug("User input:", text); 
             columnBottomSection.processMessage(text);
-            
-            text = ""; // Clear input after processing
-            columnBottomSection.pendingInputText = ""
-            text = ""; // Clear input after processing
+
+            text = "";
+            columnBottomSection.pendingInputText = "";
         }
     }
 
-    // Display a small combo box at the bottom to change the model dynamically.
     Row {
         id: bottomModelSelectorRow
-        width: parent.width
-        height: cbModelSelector.implicitHeight
+        x: columnBottomSection.leftInset
+        width: parent.width - columnBottomSection.leftInset - columnBottomSection.rightInset
+        height: Theme.buttonHeightXS
         spacing: Theme.spacingS
 
-        DankActionButton {
+        DActionButton {
             id: btnSettings
             anchors.verticalCenter: parent.verticalCenter
-            
-            visible: true
-            
+
             iconName: "settings"
-            buttonSize: 32
-            iconSize: 18
-            
+            tooltipText: "Settings"
+
             onClicked: () => {
                 Quickshell.execDetached(["dms", "ipc", "call", "settings", "openWith", "plugins"]);
             }
@@ -81,14 +79,14 @@ Column {
 
         AiSelector {
             id: cbModelSelector
-            model: availableAisModel
-            maxPopupHeight: popoutHeight * 0.6
+            anchors.verticalCenter: parent.verticalCenter
+            width: parent.width - btnSettings.width - rowBottomRowActions.width - (bottomModelSelectorRow.spacing * 2)
 
-            width: parent.width - rowBottomRowActions.width - btnSettings.width - (Theme.spacingS * 2)
-            
-            // Map the internal component's currentValueId to our columnBottomSection.aiModel
+            maxPopupHeight: popoutHeight * 0.6
+            model: availableAisModel
+
             currentValueId: columnBottomSection.aiModel
-            
+
             onCurrentValueIdChanged: {
                 if (currentValueId !== columnBottomSection.aiModel && pluginService) {
                     columnBottomSection.aiModel = currentValueId;
@@ -97,27 +95,21 @@ Column {
                 }
             }
         }
-        
+
         Row {
             id: rowBottomRowActions
-            width: Theme.fontSizeLarge * 4 + Theme.spacingS + 25
-            height: cbModelSelector.implicitHeight
-
             anchors.verticalCenter: parent.verticalCenter
-            spacing: Theme.spacingS
+            spacing: bottomModelSelectorRow.spacing
 
-            DankActionButton {
+            DActionButton {
                 anchors.verticalCenter: parent.verticalCenter
-                
-                visible: true
-                
+
                 iconName: "history_off"
-                buttonSize: 32
-                iconSize: 18
-                
+                tooltipText: "Clear chat"
+
                 ConfirmModal {
                     id: clearChatConfirm
-                }                                
+                }
 
                 onClicked: () => {
                     clearChatConfirm.showWithOptions({
@@ -130,24 +122,19 @@ Column {
                 }
             }
 
-            DankActionButton {
+            DActionButton {
                 anchors.verticalCenter: parent.verticalCenter
-                
-                visible: true
-                
-                iconName: "push_pin"
-                buttonSize: 32
-                iconSize: 18
 
-                iconColor: columnBottomSection.popoutSticky ? Theme.surfaceVariantText : Theme.surfaceText
-                backgroundColor: columnBottomSection.popoutSticky ? Theme.surfaceVariant : "transparent"
-                
+                iconName: "push_pin"
+                tooltipText: columnBottomSection.popoutSticky ? "Unpin popout" : "Keep popout open"
+
+                iconColor: columnBottomSection.popoutSticky ? Theme.onPrimary : Theme.onSurfaceVariant
+                backgroundColor: columnBottomSection.popoutSticky ? Theme.primary : "transparent"
+
                 onClicked: () => {
                     columnBottomSection.toggleSticky()
                 }
             }
-
-
         }
     }
 
@@ -167,7 +154,7 @@ Column {
                 return "⚠️ Selected model \"" + columnBottomSection.aiModel + "\" is currently not available";
             }
         }
-        
+
         text: getText()
     }
 }

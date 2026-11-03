@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import qs.Common 
-import qs.Widgets
+import qs.DCommon.Widgets
 import "../ThinkingPhrases.js" as ThinkingPhrases
 
 DankRectangle {
@@ -127,17 +127,15 @@ DankRectangle {
         anchors.margins: Theme.spacingL
         spacing: Theme.spacingM
 
-        DankSpinner {
+        DSpinner {
             id: thinkingAnim
             visible: root.isThinking
             running: root.isThinking
+            size: Theme.spacingXL
+            color: Theme.primary
             Layout.preferredWidth: Theme.spacingXL 
             Layout.preferredHeight: Theme.spacingXL 
             Layout.alignment: Qt.AlignTop
-            
-            // Attempt to colorize based on style
-            palette.dark: Theme.primary 
-            palette.text: Theme.primary
         }
 
         TextEdit {
@@ -340,7 +338,7 @@ DankRectangle {
         id: bubbleHover
     }
 
-    DankActionButton {
+    DActionButton {
         id: copyButton
         anchors.top: parent.top
         anchors.right: parent.right
@@ -351,6 +349,7 @@ DankRectangle {
         iconName: "content_copy"
         buttonSize: 32
         iconSize: 18
+        tooltipText: "Copy message"
         
         // Yes, this seems a bit hacky but the alternative recommended way
         // seems to be to run a shell command to copy to clipboard which IMO seems just as convoluted.
@@ -366,7 +365,7 @@ DankRectangle {
         }
     }
 
-    DankActionButton {
+    DActionButton {
         id: detailsButton
         anchors.top: parent.top
         anchors.right: copyButton.left
@@ -377,10 +376,7 @@ DankRectangle {
         iconName: "info"
         buttonSize: 32
         iconSize: 18
-        
-        DankTooltip {
-            text: "Prompt Tokens: " + (root.metadata.promptTokens || 0) + "\nCompletion Tokens: " + (root.metadata.completionTokens || 0) + "\nTotal Tokens: " + (root.metadata.totalTokens || 0) + "\nEstimated Cost: " + (root.metadata.estimatedCost ? "$" + root.metadata.estimatedCost.toFixed(6) : "N/A")
-        }
+        tooltipText: "Prompt: " + (root.metadata.promptTokens || 0) + " · Completion: " + (root.metadata.completionTokens || 0) + " · Total: " + (root.metadata.totalTokens || 0) + " · Cost: " + (root.metadata.estimatedCost ? "$" + root.metadata.estimatedCost.toFixed(6) : "N/A")
         
         onClicked: {}
     }

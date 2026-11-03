@@ -2,7 +2,6 @@ import QtQuick
 import Quickshell
 import qs.Common
 import qs.Services
-import qs.Widgets
 
 MouseArea {
     id: resizeHandle
@@ -12,14 +11,15 @@ MouseArea {
     property real popoutHeight: 500
     property string pluginId: ""
     property var pluginService: null
+    readonly property real gripSize: Theme.spacingXL
 
     // Dynamic anchoring based on resizeCorner setting
     anchors.right: (resizeCorner === "left") ? undefined : parent.right
     anchors.left: (resizeCorner === "left") ? parent.left : undefined
     anchors.bottom: parent.bottom
     
-    width: 25
-    height: 25
+    width: gripSize
+    height: gripSize
     // Switch cursor shape depending on side
     cursorShape: (resizeCorner === "left") ? Qt.SizeBDiagCursor : Qt.SizeFDiagCursor
     
@@ -70,7 +70,7 @@ MouseArea {
             var ctx = getContext("2d");
             ctx.strokeStyle = Theme.surfaceText;
             ctx.lineCap = "round";
-            ctx.lineWidth = 2;
+            ctx.lineWidth = Theme.outlineWidthFocused;
             ctx.beginPath();
             
             // Diagonal lines
@@ -79,18 +79,18 @@ MouseArea {
             
             if (resizeHandle.resizeCorner === "left") {
                 // Draw lines in bottom-left corner / /
-                ctx.moveTo(0, h - 10);
-                ctx.lineTo(10, h);
+                ctx.moveTo(0, h - Theme.spacingM);
+                ctx.lineTo(Theme.spacingM, h);
                 
-                ctx.moveTo(0, h - 5);
-                ctx.lineTo(5, h);
+                ctx.moveTo(0, h - Theme.spacingXS);
+                ctx.lineTo(Theme.spacingXS, h);
             } else {
                 // Draw lines in bottom-right corner \ \ (or rather, the standard resize grip)
-                ctx.moveTo(w, h - 10);
-                ctx.lineTo(w - 10, h);
+                ctx.moveTo(w, h - Theme.spacingM);
+                ctx.lineTo(w - Theme.spacingM, h);
                 
-                ctx.moveTo(w, h - 5);
-                ctx.lineTo(w - 5, h);
+                ctx.moveTo(w, h - Theme.spacingXS);
+                ctx.lineTo(w - Theme.spacingXS, h);
             }
             
             ctx.stroke();
