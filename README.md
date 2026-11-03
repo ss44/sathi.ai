@@ -64,8 +64,10 @@ those buckets and decides one of three things:
 
 Buckets are re-summarized in the background using the **Fast Model** so the manifest stays
 accurate. Negotiation turns are never stored in the chat, and their token usage is merged into
-the final message's cost details. If routing fails for any reason, the plugin silently falls
-back to the classic full-recent-history behavior, so nothing ever blocks your chat.
+the final message's cost details. While the negotiation runs, the thinking bubble shows what is
+happening (e.g. "Checking which context matters...", "Fetching relevant earlier context...").
+If routing fails for any reason, the plugin silently falls back to the classic
+full-recent-history behavior, so nothing ever blocks your chat.
 
 ## Usage
 
