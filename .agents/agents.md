@@ -119,7 +119,7 @@ DOCS: document LM Studio setup
 | `HISTORY` | Chat persistence, loading, pruning, history limits, and persistence wiring (`chatHistory.js`, related parts of `ui/ChatBackendChat.qml`). |
 | `SECURITY` | API-key handling/obfuscation, plugin permissions, and sensitive-data safety (`providers/crypto.js`, credential storage). |
 | `DOCS` | README, agent instructions, and contributor-facing documentation (`README.md`, `.agents/`). |
-| `RELEASE` | Version bumps and plugin metadata (`plugin.json`, release branches). |
+| `RELEASE` | Release chores and plugin metadata other than versions (`plugin.json` fields, release branches). Do not bump `plugin.json` versions manually — the workflow manager bumps versions automatically on release. |
 | `BUILD` | Tooling, editor/agent configuration, module manifests, and CI (`.kilo/`, `.vscode/`, `qmldir`). |
 
 ### Rules
