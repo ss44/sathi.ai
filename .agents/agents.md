@@ -18,9 +18,10 @@ Sathi AI is a desktop Generative AI chat widget built for Dank Material Shell. I
   - `ChatBackendSettings.qml` & `ChatBackendChat.qml`: Invisible logic components bridging the UI to the `providers.js` logic.
 - `providers/`: The engine room for LLM communication.
   - `providers.js`: The central orchestrator/registry. Manages instances, loaded models, history passing, and cost calculations. Uses `.pragma library` to act as a singleton.
+  - `context.js`: Smart context routing orchestrator (issue #72). Builds context-bucket manifests, parses `[[NEED_CONTEXT: ...]]` markers, runs the ephemeral negotiation legs, assigns exchanges to buckets, and triggers background summarization. Receives `sendRaw`/`sendLegacy` via dependency injection to avoid circular imports.
   - `openai.js`, `gemini.js`, `anthropic.js`: API-specific implementations. Note: `openai.js` handles OpenAI, Ollama, LM Studio, and all generic OpenAI-compatible endpoints.
   - `crypto.js`: Provides light obfuscation (`enc:v1:...`) for API keys before saving them to DMS settings.
-- `chatHistory.js`: Manages saving/loading/pruning the chat history via the DMS plugin service.
+- `chatHistory.js`: Manages saving/loading/pruning the chat history via the DMS plugin service. Persists a v2 payload (`{ v, history, blocks, lastUsedBlockId }`) that adds the context-bucket index; legacy plain-array payloads migrate on load.
 
 ## Core Architectural Decisions
 
@@ -56,6 +57,22 @@ The `modelPricing` object is hardcoded in `providers.js`. If OpenAI, Anthropic, 
 
 ### 8. State Wrappers
 `ChatBackendChat.qml` and `ChatBackendSettings.qml` act as invisible bridge components. They wire the QML UI signals directly to the JavaScript logic (`providers.js` and `chatHistory.js`). When wiring up new functionality, add your properties and signals to these wrappers instead of dumping logic directly into visual QML components.
+
+### 9. Smart Context Routing
+When the `smartContext` setting is enabled, `providers.js#sendMessage` delegates to `context.js#orchestrate` instead of the linear-history flow (`sendMessageLegacy`):
+- Leg 1 sends the user message plus a compact bucket manifest to the MAIN model. If the model answers without a marker, that answer is final (usually cheaper than the legacy send).
+- If the model ends its response with `[[NEED_CONTEXT: <ids>]]`, leg 2 ships the requested buckets (summary + recent messages) and forces the final answer.
+- Negotiation legs are ephemeral: never persisted to `chatHistory.js`. Their token usage is merged into the final message metadata.
+- Blocks live in `chatHistory.js` as a parallel index over `masterHistory` (referenced by stable message ids), persist as a v2 payload, and survive pruning as summary-only entries.
+- Background summarization uses the configured fast model (`smartContextModel` setting) via `providers.js#sendRaw`, a one-off chat with no history side-effects.
+- Any routing failure falls back to `sendMessageLegacy` exactly once. Keep that ladder intact when touching routing code.
+
+### 10. Headless JS Tests
+`tests/` contains qmltestrunner suites for the pure-JS modules (`chatHistory.js`, `context.js`, plus a providers API smoke test). Run with:
+```
+QT_QPA_PLATFORM=offscreen /usr/lib/qt6/bin/qmltestrunner -input tests/tst_context.qml
+```
+Note: the `qml`/`qmltestrunner` binaries on PATH may be Qt 5 on some systems; use `/usr/lib/qt6/bin/` explicitly. Test mocks inject fake `sendRaw`/`sendLegacy`/`pluginService` implementations — extend them when adding routing behavior.
 
 ## Development Tips & Gotchas
 

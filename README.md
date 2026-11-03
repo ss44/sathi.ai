@@ -13,6 +13,7 @@ https://github.com/user-attachments/assets/0e90c1ff-e7d1-4b15-98a0-434727c99665
 - 🎨 **Rich Formatting**: Chat bubbles support markdown formatting, syntax-highlighted code blocks, and easy "copy to clipboard" functionality.
 - 📊 **Token & Cost Tracking**: Hover over the info icon on messages to view token usage and estimated costs.
 - 💾 **Persistent History**: Optionally persist your chat sessions across reboots.
+- 🧠 **Smarter Context**: Optional context-bucket routing that sends the AI only the relevant slices of older conversations instead of the full history, cutting token spend on long chats.
 - 🎭 **Context Control**: Customize the System Prompt to define the AI's persona.
 - 📌 **Pin to Top**: Keep the chat visible while you work. You can still use other apps underneath it.
 
@@ -48,6 +49,23 @@ https://github.com/user-attachments/assets/0e90c1ff-e7d1-4b15-98a0-434727c99665
      - For LM Studio: Set the URL to `http://localhost:1234` and leave the API key blank.
 4. Click **Add Provider**. You can add as many as you need!
 5. (Optional) Set a custom **System Prompt** to define the AI's persona, and configure your History limits.
+6. (Optional) Enable **Smarter Context** and pick a **Fast Model** (a small, cheap model is ideal).
+
+## Smarter Context
+
+Instead of re-sending the entire chat history with every message, Smarter Context groups older
+turns into summarized *context buckets*. For each message the AI is shown a compact manifest of
+those buckets and decides one of three things:
+
+- **Answer directly** — no older context needed, nothing extra is sent.
+- **Request buckets** — it asks for specific buckets (e.g. `[[NEED_CONTEXT: b3, b7]]`) and
+  receives only their summaries plus their most recent messages in a hidden follow-up turn.
+- **Start a new topic** — the exchange is filed into a fresh bucket.
+
+Buckets are re-summarized in the background using the **Fast Model** so the manifest stays
+accurate. Negotiation turns are never stored in the chat, and their token usage is merged into
+the final message's cost details. If routing fails for any reason, the plugin silently falls
+back to the classic full-recent-history behavior, so nothing ever blocks your chat.
 
 ## Usage
 
