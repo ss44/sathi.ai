@@ -76,6 +76,47 @@ The `modelPricing` object is hardcoded in `providers.js`. If OpenAI, Anthropic, 
 5. **Clipboard Quirks:**
    - Copying rich text/markdown to the clipboard natively in QML can be tricky. Sathi uses a hidden `TextEdit` component (`copyHelper`), updates its text, calls `selectAll()`, and then `copy()`. This avoids needing to execute shell commands to interface with Wayland/X11 clipboards.
 
+## Commit & PR Conventions
+
+Every commit subject and PR title must start with a project domain, followed by a colon, a single space, and a brief summary:
+
+```
+<DOMAIN>: <brief summary>
+```
+
+Examples:
+
+```
+UI: fix bottom bar alignment after resize
+AI: add streaming support for OpenAI-compatible providers
+DOCS: document LM Studio setup
+```
+
+### Valid Domains
+
+| Domain | Use for |
+| --- | --- |
+| `AI` | LLM/provider integrations, model discovery, request/response handling, pricing, and AI-facing copy (`providers/`, `ThinkingPhrases.js`, `working.json`). |
+| `UI` | Visual components, layout, styling, input/interaction, and syntax rendering (`Sathi.qml`, `ui/*.qml`, `Syntax.js`, `assets/`). |
+| `SETTINGS` | Settings screens, provider configuration, persisted options, and settings-state wiring (`Settings.qml`, `ui/ProviderList.qml`, `ui/ChatBackendSettings.qml`). |
+| `HISTORY` | Chat persistence, loading, pruning, history limits, and persistence wiring (`chatHistory.js`, related parts of `ui/ChatBackendChat.qml`). |
+| `SECURITY` | API-key handling/obfuscation, plugin permissions, and sensitive-data safety (`providers/crypto.js`, credential storage). |
+| `DOCS` | README, agent instructions, and contributor-facing documentation (`README.md`, `.agents/`). |
+| `RELEASE` | Version bumps and plugin metadata (`plugin.json`, release branches). |
+| `BUILD` | Tooling, editor/agent configuration, module manifests, and CI (`.kilo/`, `.vscode/`, `qmldir`). |
+
+### Rules
+
+- Use one domain per commit and PR. If a change spans unrelated domains, split it into separate commits (and separate PRs when practical).
+- Pick the domain that describes the primary intent. A visual change to a settings component is `UI`; a change to how settings are stored or behave is `SETTINGS`.
+- Keep the summary imperative and concise, with lowercase wording after the colon and no trailing period. Keep the full subject under ~72 characters.
+- The PR title must use the same format as its primary commit. The PR body should include `## Summary` and `## Verification` sections.
+- Create a PR for every change, including docs, chores, and small fixes, to preserve a historical record. Target `master` unless the user specifies another base (for example, a release or development branch).
+- Do not merge a PR unless the user explicitly asks. Creating the PR is the default completion step.
+- Never commit secrets, API keys, or generated local state. Check `git status` and the diff before committing.
+- Use `<domain>/<short-slug>` for branch names (for example, `ai/openai-streaming` or `ui/chat-bubble-markdown`).
+
 ## Getting Started on a New Task
 - Check if your task modifies how models are fetched. If so, update `openai.js` (for standard APIs) and test with local Ollama to ensure the `baseUrl` override isn't broken.
 - Any UI changes to `Settings.qml` should be tested to ensure the `customProviders` JSON array serializes correctly.
+- Before finishing, follow the commit and PR conventions above so every change is recorded.
