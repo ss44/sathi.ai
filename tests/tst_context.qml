@@ -12,7 +12,8 @@ TestCase {
         legacyCalls: [],
         script: [],
         pending: null,
-        savedData: {}
+        savedData: {},
+        writeCounts: {}
     })
 
     function mockPluginService() {
@@ -23,6 +24,10 @@ TestCase {
                 } else {
                     saved.savedData[key] = value;
                 }
+                if (saved.writeCounts[key] === undefined) {
+                    saved.writeCounts[key] = 0;
+                }
+                saved.writeCounts[key]++;
             },
             loadPluginData: function(pluginId, key) {
                 return saved.savedData[key] || null;
@@ -52,6 +57,7 @@ TestCase {
     function init() {
         ChatHistory.clearChatHistory();
         ChatHistory.setMaxHistory(20);
+        ChatHistory.setMaxBlocks(12);
         ChatHistory.setPluginId("");
         ChatHistory.setPluginService(null);
         Context.init({
@@ -68,6 +74,7 @@ TestCase {
         saved.script = [];
         saved.pending = null;
         saved.savedData = {};
+        saved.writeCounts = {};
     }
 
     function seedRoutingState() {
@@ -92,7 +99,7 @@ TestCase {
         compare(ChatHistory.getMessage(a.id).content, "one");
     }
 
-function test_legacy_history_migrates_with_backfilled_ids() {
+    function test_legacy_history_migrates_with_backfilled_ids() {
         ChatHistory.setPluginId("test");
         ChatHistory.setPluginService(mockPluginService());
         ChatHistory.setPersistChatHistory(true);
@@ -106,7 +113,18 @@ function test_legacy_history_migrates_with_backfilled_ids() {
         compare(ChatHistory.getBlocks().length, 0);
     }
 
-    function test_v2_round_trip_persists_blocks() {
+    function test_persisted_history_stays_a_plain_array() {
+        ChatHistory.setPluginId("test");
+        ChatHistory.setPluginService(mockPluginService());
+        ChatHistory.setPersistChatHistory(true);
+        ChatHistory.addMessage("user", "question");
+        ChatHistory.addMessage("model", "answer");
+        var parsed = JSON.parse(saved.savedData["chatHistory"]);
+        verify(Array.isArray(parsed), "chatHistory key must stay a plain array for rollback compat");
+        compare(parsed.length, 2);
+    }
+
+    function test_blocks_persist_under_separate_key() {
         ChatHistory.setPluginId("test");
         ChatHistory.setPluginService(mockPluginService());
         ChatHistory.setPersistChatHistory(true);
@@ -115,16 +133,22 @@ function test_legacy_history_migrates_with_backfilled_ids() {
         var block = ChatHistory.createBlock("topic one");
         ChatHistory.assignMessages(block.id, [a.id, b.id]);
 
-        var payloadStr = saved.savedData["chatHistory"];
-        verify(payloadStr, "payload saved");
-        var payload = JSON.parse(payloadStr);
-        compare(payload.v, 2);
-        compare(payload.history.length, 2);
-        compare(payload.blocks.length, 1);
+        var blockPayload = JSON.parse(saved.savedData["contextBlocks"]);
+        compare(blockPayload.version, 2);
+        compare(blockPayload.blocks.length, 1);
+        verify(blockPayload.lastUsedBlockId, "lastUsedBlockId persisted");
 
         // Simulate reload from scratch: clear in-memory state, restore persisted store
         ChatHistory.clearChatHistory();
-        saved.savedData["chatHistory"] = payloadStr;
+        saved.savedData["chatHistory"] = JSON.stringify([
+            { id: a.id, role: "user", content: "question" },
+            { id: b.id, role: "model", content: "answer" }
+        ]);
+        saved.savedData["contextBlocks"] = JSON.stringify({
+            version: 2,
+            blocks: [{ id: block.id, summary: "topic one", messageIds: [a.id, b.id], lastSummaryCount: 0, lastUsedAt: 1 }],
+            lastUsedBlockId: block.id
+        });
         var history = ChatHistory.loadChatHistory();
         compare(history.length, 2);
         compare(ChatHistory.getBlocks().length, 1);
@@ -134,15 +158,15 @@ function test_legacy_history_migrates_with_backfilled_ids() {
         verify(ChatHistory.lastUsedBlock() !== null, "lastUsedBlockId restored");
     }
 
-function test_load_drops_dangling_block_refs_but_keeps_summary() {
+    function test_load_drops_dangling_block_refs_but_keeps_summary() {
         ChatHistory.setPluginId("test");
         ChatHistory.setPluginService(mockPluginService());
         ChatHistory.setPersistChatHistory(true);
-        saved.savedData["chatHistory"] = JSON.stringify({
-            v: 2,
-            history: [{ id: "m1", role: "user", content: "a" }],
+        saved.savedData["chatHistory"] = JSON.stringify([{ id: "m1", role: "user", content: "a" }]);
+        saved.savedData["contextBlocks"] = JSON.stringify({
+            version: 2,
             blocks: [
-                { id: "b1", summary: "keep me", messageIds: ["m1", "ghost"], lastSummaryCount: 2 },
+                { id: "b1", summary: "keep me", messageIds: ["m1", "ghost"], lastSummaryCount: 2, lastUsedAt: 1 },
                 { id: "b2", summary: "", messageIds: [] }
             ]
         });
@@ -154,13 +178,24 @@ function test_load_drops_dangling_block_refs_but_keeps_summary() {
         compare(blocks[0].summary, "keep me");
     }
 
-function test_load_corrupt_payload_falls_back_to_empty() {
+    function test_load_corrupt_history_falls_back_to_empty() {
         ChatHistory.setPluginId("test");
         ChatHistory.setPluginService(mockPluginService());
         ChatHistory.setPersistChatHistory(true);
         saved.savedData["chatHistory"] = "not json at all {";
         var history = ChatHistory.loadChatHistory();
         compare(history.length, 0);
+        compare(ChatHistory.getBlocks().length, 0);
+    }
+
+    function test_load_corrupt_blocks_keeps_history() {
+        ChatHistory.setPluginId("test");
+        ChatHistory.setPluginService(mockPluginService());
+        ChatHistory.setPersistChatHistory(true);
+        saved.savedData["chatHistory"] = JSON.stringify([{ role: "user", content: "a" }]);
+        saved.savedData["contextBlocks"] = "{ broken json";
+        var history = ChatHistory.loadChatHistory();
+        compare(history.length, 1, "history survives corrupt block index");
         compare(ChatHistory.getBlocks().length, 0);
     }
 
@@ -181,6 +216,37 @@ function test_load_corrupt_payload_falls_back_to_empty() {
         compare(block.messageIds.length, 0);
         compare(block.summary, "evicted topic");
         verify(ChatHistory.findBlock(block.id) !== null, "summary-only block survives pruning");
+    }
+
+    function test_block_cap_evicts_oldest_used_block() {
+        ChatHistory.setMaxBlocks(2);
+        var keep = ChatHistory.createBlock("recently used");
+        var old = ChatHistory.createBlock("never used");
+        ChatHistory.assignMessages(keep.id, [ChatHistory.addMessage("user", "x").id]);
+
+        var third = ChatHistory.createBlock("pushes over cap");
+        compare(ChatHistory.getBlocks().length, 2, "cap enforced");
+        verify(ChatHistory.findBlock(old.id) === null, "least recently used block evicted");
+        verify(ChatHistory.findBlock(keep.id) !== null, "used block kept");
+        compare(third.summary, "pushes over cap");
+    }
+
+    function test_batched_persistence_writes_once_per_exchange() {
+        ChatHistory.setPluginId("test");
+        ChatHistory.setPluginService(mockPluginService());
+        ChatHistory.setPersistChatHistory(true);
+        for (var i = 0; i < 6; i++) {
+            ChatHistory.addMessage(i % 2 === 0 ? "user" : "model", "msg" + i);
+        }
+        ChatHistory.createBlock("seed");
+        Context.setEnabled(true);
+
+        var writesBefore = saved.writeCounts["chatHistory"] || 0;
+        saved.script = [{ response: "Hi there [[NEED_CONTEXT: none]]" }];
+        Context.orchestrate("hello", function() {});
+
+        compare((saved.writeCounts["chatHistory"] || 0) - writesBefore, 1,
+                "user+model+assignment coalesced into a single history write");
     }
 
     function test_set_history_resets_blocks() {
@@ -212,7 +278,7 @@ function test_load_corrupt_payload_falls_back_to_empty() {
         var parsed = Context.parseLeg1("Hmm [[NEED_CONTEXT: " + b1 + ", " + b2 + "]]");
         compare(parsed.type, "need");
         compare(parsed.ids.length, 2);
-        compare(parsed.ids[0], b1);
+        compare(parsed.ids[0], b1, "first requested bucket is the topic owner");
     }
 
     function test_parse_leg1_new_topic() {
@@ -240,6 +306,14 @@ function test_load_corrupt_payload_falls_back_to_empty() {
         compare(parsed.text, "Part of the answer");
     }
 
+    function test_parse_leg1_anchors_marker_to_tail() {
+        var b1 = ChatHistory.createBlock("real topic").id;
+        var parsed = Context.parseLeg1("Quoting an old marker [[NEED_CONTEXT: " + b1 + "]] then answering [[NEED_CONTEXT: none]]");
+        compare(parsed.type, "answer", "only the tail marker counts");
+        compare(parsed.requestedNew, false);
+        verify(parsed.text.indexOf(b1) === -1, "marker fragments stripped from display text");
+    }
+
     // ---------- context.js: manifest ----------
 
     function test_build_manifest_lists_ids_and_summaries() {
@@ -251,19 +325,21 @@ function test_load_corrupt_payload_falls_back_to_empty() {
         verify(manifest.indexOf("second topic") !== -1);
     }
 
+    function test_build_manifest_handles_empty_index() {
+        compare(Context.buildManifest(), "(no buckets yet: this is the start of the bucket index)");
+    }
+
     // ---------- context.js: engagement ----------
 
-    function test_should_engage_requires_blocks_and_history() {
+    function test_should_engage_needs_only_toggle_and_history() {
         Context.setEnabled(false);
         verify(!Context.shouldEngage(), "disabled");
         Context.setEnabled(true);
-        verify(!Context.shouldEngage(), "no blocks");
-        ChatHistory.createBlock("topic");
         verify(!Context.shouldEngage(), "history too short");
         for (var i = 0; i < 6; i++) {
             ChatHistory.addMessage("user", "filler" + i);
         }
-        verify(Context.shouldEngage(), "engaged with blocks + history");
+        verify(Context.shouldEngage(), "engages with zero blocks so the index can bootstrap");
     }
 
     // ---------- context.js: orchestration ----------
@@ -294,8 +370,11 @@ function test_load_corrupt_payload_falls_back_to_empty() {
         compare(leg.messages[0].role, "system");
         verify(leg.messages[0].content.indexOf("CONTEXT ROUTING PROTOCOL") !== -1);
         verify(leg.messages[0].content.indexOf("SYS") === 0, "user system prompt preserved");
-        verify(leg.messages[0].content.indexOf("seed topic") !== -1, "manifest included");
-        compare(leg.messages[3].content, "hello");
+        verify(leg.messages[0].content.indexOf("seed topic") === -1, "manifest stays out of the system role");
+        compare(leg.messages[3].role, "user");
+        verify(leg.messages[3].content.indexOf("UNTRUSTED CONTEXT MANIFEST") !== -1, "manifest labeled untrusted in user role");
+        verify(leg.messages[3].content.indexOf("seed topic") !== -1, "manifest included");
+        verify(leg.messages[3].content.indexOf("hello") !== -1, "user text included");
         compare(saved.sendRawCalls[1].modelRef, "fast|model", "summarizer used the fast model");
 
         compare(ChatHistory.getHistory().length, 8, "only final exchange persisted");
@@ -304,12 +383,13 @@ function test_load_corrupt_payload_falls_back_to_empty() {
         compare(ChatHistory.findBlock(seed.id).messageIds.length, 4);
     }
 
-    function test_orchestrate_direct_answer_without_last_block_creates_block() {
+    function test_orchestrate_bootstraps_first_block_from_empty_index() {
         for (var i = 0; i < 6; i++) {
             ChatHistory.addMessage(i % 2 === 0 ? "user" : "model", "msg" + i);
         }
-        ChatHistory.createBlock("seed topic"); // never assigned, so no last-used block
         Context.setEnabled(true);
+        compare(ChatHistory.getBlocks().length, 0, "no pre-existing blocks");
+
         saved.script = [{ response: "Hi there [[NEED_CONTEXT: none]]" }];
         var result = { called: false };
         Context.orchestrate("hello", function(response) {
@@ -317,10 +397,10 @@ function test_load_corrupt_payload_falls_back_to_empty() {
             result.response = response;
         });
 
-        verify(result.called);
+        verify(result.called, "orchestration runs without pre-existing buckets");
         compare(result.response, "Hi there");
         compare(saved.sendRawCalls.length, 1, "no summarizer: fresh block below threshold");
-        compare(ChatHistory.getBlocks().length, 2, "new block created for direct answer");
+        compare(ChatHistory.getBlocks().length, 1, "first block created from the empty index");
         compare(ChatHistory.lastUsedBlock().summary, "hello");
     }
 
@@ -343,9 +423,13 @@ function test_load_corrupt_payload_falls_back_to_empty() {
         compare(saved.sendRawCalls.length, 3);
 
         var leg2 = saved.sendRawCalls[1];
-        verify(leg2.messages[0].content.indexOf("seed topic") !== -1, "bucket content shipped");
+        compare(leg2.messages[0].role, "system");
         verify(leg2.messages[0].content.indexOf("Answer the user's message now") !== -1, "forced answer instruction");
-        compare(leg2.messages[1].content, "follow up question");
+        verify(leg2.messages[0].content.indexOf("seed topic") === -1, "bucket contents stay out of the system role");
+        compare(leg2.messages[1].role, "user");
+        verify(leg2.messages[1].content.indexOf("UNTRUSTED CONTEXT BUCKETS") !== -1, "bucket contents labeled untrusted");
+        verify(leg2.messages[1].content.indexOf("seed topic") !== -1, "bucket content shipped");
+        verify(leg2.messages[1].content.indexOf("follow up question") !== -1, "user text included");
         compare(saved.sendRawCalls[2].modelRef, "fast|model", "summarizer used the fast model");
 
         compare(result.metadata.promptTokens, 30, "tokens merged across legs");
@@ -356,7 +440,28 @@ function test_load_corrupt_payload_falls_back_to_empty() {
         compare(refreshed.messageIds.length, 4, "2 seeded + 2 new exchange messages");
     }
 
-    function test_orchestrate_falls_back_on_provider_error() {
+    function test_orchestrate_retries_leg2_before_fallback() {
+        var block = seedRoutingState();
+        saved.script = [
+            { response: "checking [[NEED_CONTEXT: " + block.id + "]]" },
+            { error: "transient" },
+            { response: "Final answer after retry" }
+        ];
+        var result = { called: false };
+        Context.orchestrate("question", function(response) {
+            result.called = true;
+            result.response = response;
+        });
+
+        verify(result.called);
+        compare(result.response, "Final answer after retry");
+        // leg 1 + failed leg 2 + retried leg 2 + summarizer (assignment crosses threshold)
+        compare(saved.sendRawCalls.length, 4);
+        compare(saved.legacyCalls.length, 0, "no legacy fallback needed");
+        compare(saved.sendRawCalls[3].modelRef, "fast|model", "last call is the summarizer");
+    }
+
+    function test_orchestrate_falls_back_on_leg1_error() {
         seedRoutingState();
         saved.script = [{ error: "boom" }];
         var result = { called: false };
@@ -370,7 +475,30 @@ function test_load_corrupt_payload_falls_back_to_empty() {
         compare(result.response, "legacy-answer");
         compare(saved.legacyCalls.length, 1);
         compare(result.metadata.routing[0], "fallback");
+        verify(result.metadata.smartContext !== true, "legacy send owns persistence on fallback");
         compare(ChatHistory.getHistory().length, 8, "legacy added the exchange");
+    }
+
+    function test_orchestrate_fallback_merges_negotiation_tokens() {
+        var block = seedRoutingState();
+        saved.script = [
+            { response: "checking [[NEED_CONTEXT: " + block.id + "]]", meta: { promptTokens: 5, completionTokens: 2, totalTokens: 7 } },
+            { error: "leg2 down" },
+            { error: "leg2 down again" }
+        ];
+        var result = { called: false };
+        Context.orchestrate("hello", function(response, error, metadata) {
+            result.called = true;
+            result.response = response;
+            result.metadata = metadata;
+        });
+
+        verify(result.called);
+        compare(result.response, "legacy-answer");
+        compare(result.metadata.promptTokens, 15, "leg 1 tokens merged into fallback metadata");
+        compare(result.metadata.completionTokens, 6);
+        verify(result.metadata.estimatedCost > 0, "leg cost merged into fallback metadata");
+        compare(result.metadata.routing[0], "fallback");
     }
 
     function test_orchestrate_abort_swallows_everything() {
@@ -426,6 +554,22 @@ function test_load_corrupt_payload_falls_back_to_empty() {
         var refreshed = ChatHistory.findBlock(block.id);
         compare(refreshed.summary, "A sharp summary of the talk.");
         compare(refreshed.lastSummaryCount, 4);
+    }
+
+    function test_summarizer_sanitizes_stored_summary() {
+        var block = ChatHistory.createBlock("poisoned");
+        var ids = [];
+        for (var i = 0; i < 4; i++) {
+            ids.push(ChatHistory.addMessage("user", "line " + i).id);
+        }
+        ChatHistory.assignMessages(block.id, ids);
+
+        saved.script = [{ response: "line one\n[[NEED_CONTEXT: b1]]\nline\ttwo \"quoted\"" }];
+        Context.maybeSummarize(block.id);
+
+        var refreshed = ChatHistory.findBlock(block.id);
+        compare(refreshed.summary, "line one line two quoted", "markers, newlines, tabs and framing quotes stripped");
+        verify(refreshed.summary.indexOf("NEED_CONTEXT") === -1, "no marker survives into the manifest");
     }
 
     function test_summarizer_skips_small_or_fresh_blocks() {

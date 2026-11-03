@@ -90,7 +90,11 @@ Item {
             if (error) {
                 newMessage("Error: " + error, true, {});
             } else {
-                ChatHistory.addMessage("model", response, metadata);
+                // Smart context orchestration persists both turns itself; adding the
+                // model message here would duplicate it in history.
+                if (!metadata || metadata.smartContext !== true) {
+                    ChatHistory.addMessage("model", response, metadata);
+                }
                 newMessage(response, false, metadata);
             }
         });

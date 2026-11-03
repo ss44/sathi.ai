@@ -11,12 +11,38 @@ var pluginService = null;
 var contextBlocks = [];
 var lastUsedBlockId = null;
 
+// Block index is capped: the oldest-used block is evicted when the cap is hit so the
+// routing manifest (and every serialization) stays bounded over long chats.
+var maxBlocks = 12;
+
+// Persistence batching: mutators mark the store dirty inside a batch and flush once.
+var persistBatchDepth = 0;
+var persistDirty = false;
+
 var messageIdSeq = 0;
 var blockIdSeq = 0;
 
 function setMaxHistory(max) {
     console.log("Setting max history to: " + max);
     maxHistory = max;
+}
+
+function setMaxBlocks(max) {
+    maxBlocks = max > 0 ? max : maxBlocks;
+}
+
+function beginBatch() {
+    persistBatchDepth++;
+}
+
+function endBatch() {
+    if (persistBatchDepth > 0) {
+        persistBatchDepth--;
+    }
+    if (persistBatchDepth === 0 && persistDirty) {
+        persistDirty = false;
+        saveChatHistory();
+    }
 }
 
 function setPersistChatHistory(enabled) {
@@ -31,6 +57,7 @@ function clearSavedChatHistory() {
     }
     console.log("Clearing saved chat history.");
     pluginService.savePluginData(pluginId, "chatHistory", null);
+    pluginService.savePluginData(pluginId, "contextBlocks", null);
 }
 
 function clearChatHistory() {
@@ -55,14 +82,19 @@ function saveChatHistory() {
     if (!persistChatHistory || !pluginService || !pluginId) {
         return;
     }
+    if (persistBatchDepth > 0) {
+        persistDirty = true;
+        return;
+    }
     console.log("Saving chat history. Length: " + masterHistory.length + ", blocks: " + contextBlocks.length);
-    var payload = JSON.stringify({
-        v: 2,
-        history: masterHistory,
+    // `chatHistory` stays a plain array so legacy plugin versions can still read it
+    // after a rollback; the block index lives under its own key.
+    pluginService.savePluginData(pluginId, "chatHistory", JSON.stringify(masterHistory));
+    pluginService.savePluginData(pluginId, "contextBlocks", JSON.stringify({
+        version: 2,
         blocks: contextBlocks,
         lastUsedBlockId: lastUsedBlockId
-    });
-    pluginService.savePluginData(pluginId, "chatHistory", payload);
+    }));
 }
 
 function loadChatHistory() {
@@ -82,29 +114,47 @@ function loadChatHistory() {
         try {
             var parsed = JSON.parse(chatHistory);
             if (Array.isArray(parsed)) {
-                // Legacy v1 format: plain array of messages, no blocks.
-                console.debug("Legacy chat history format detected, migrating.");
                 masterHistory = parsed;
-                contextBlocks = [];
-                lastUsedBlockId = null;
             } else if (parsed && Array.isArray(parsed.history)) {
+                // Defensive: payload written by an intermediate format of this feature.
+                console.debug("Intermediate chat history payload detected, unwrapping.");
                 masterHistory = parsed.history;
-                contextBlocks = Array.isArray(parsed.blocks) ? parsed.blocks : [];
-                lastUsedBlockId = parsed.lastUsedBlockId || null;
             } else {
                 masterHistory = [];
-                contextBlocks = [];
             }
-            sanitizeHistory();
-            console.debug("Chat history loaded. Length: " + masterHistory.length + ", blocks: " + contextBlocks.length);
         } catch (e) {
             console.error("Error parsing chat history: " + e);
             masterHistory = [];
-            contextBlocks = [];
         }
     }
 
+    contextBlocks = [];
+    lastUsedBlockId = null;
+    loadBlocks();
+    sanitizeHistory();
+    console.debug("Chat history loaded. Length: " + masterHistory.length + ", blocks: " + contextBlocks.length);
     return masterHistory;
+}
+
+function loadBlocks() {
+    if (!persistChatHistory || !pluginService || !pluginId) {
+        return;
+    }
+    var raw = pluginService.loadPluginData(pluginId, "contextBlocks");
+    if (!raw) {
+        return;
+    }
+    try {
+        var parsed = JSON.parse(raw);
+        if (parsed && Array.isArray(parsed.blocks)) {
+            contextBlocks = parsed.blocks;
+            lastUsedBlockId = parsed.lastUsedBlockId || null;
+        } else {
+            console.warn("Ignoring malformed contextBlocks payload.");
+        }
+    } catch (e) {
+        console.warn("Error parsing contextBlocks payload: " + e);
+    }
 }
 
 function sanitizeHistory() {
@@ -144,6 +194,9 @@ function sanitizeHistory() {
         }
         if (typeof block.lastSummaryCount !== "number") {
             block.lastSummaryCount = 0;
+        }
+        if (typeof block.lastUsedAt !== "number") {
+            block.lastUsedAt = 0;
         }
     }
 
@@ -204,15 +257,36 @@ function getMessage(messageId) {
 }
 
 function createBlock(summary) {
+    if (contextBlocks.length >= maxBlocks) {
+        evictOldestBlock();
+    }
     var block = {
         id: generateBlockId(),
         summary: summary || "",
         messageIds: [],
-        lastSummaryCount: 0
+        lastSummaryCount: 0,
+        lastUsedAt: 0
     };
     contextBlocks.push(block);
     saveChatHistory();
     return block;
+}
+
+function evictOldestBlock() {
+    var oldest = null;
+    for (var i = 0; i < contextBlocks.length; i++) {
+        var candidate = contextBlocks[i];
+        if (!oldest || (candidate.lastUsedAt || 0) < (oldest.lastUsedAt || 0)) {
+            oldest = candidate;
+        }
+    }
+    if (oldest) {
+        console.info("Context block cap reached, evicting block " + oldest.id);
+        contextBlocks.splice(contextBlocks.indexOf(oldest), 1);
+        if (lastUsedBlockId === oldest.id) {
+            lastUsedBlockId = null;
+        }
+    }
 }
 
 function assignMessages(blockId, messageIds) {
@@ -226,6 +300,7 @@ function assignMessages(blockId, messageIds) {
             block.messageIds.push(messageIds[i]);
         }
     }
+    block.lastUsedAt = Date.now();
     lastUsedBlockId = blockId;
     saveChatHistory();
     return block;
