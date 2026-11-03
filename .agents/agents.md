@@ -21,7 +21,7 @@ Sathi AI is a desktop Generative AI chat widget built for Dank Material Shell. I
   - `context.js`: Smart context routing orchestrator (issue #72). Builds context-bucket manifests, parses `[[NEED_CONTEXT: ...]]` markers, runs the ephemeral negotiation legs, assigns exchanges to buckets, and triggers background summarization. Receives `sendRaw`/`sendLegacy` via dependency injection to avoid circular imports.
   - `openai.js`, `gemini.js`, `anthropic.js`: API-specific implementations. Note: `openai.js` handles OpenAI, Ollama, LM Studio, and all generic OpenAI-compatible endpoints.
   - `crypto.js`: Provides light obfuscation (`enc:v1:...`) for API keys before saving them to DMS settings.
-- `chatHistory.js`: Manages saving/loading/pruning the chat history via the DMS plugin service. Persists a v2 payload (`{ v, history, blocks, lastUsedBlockId }`) that adds the context-bucket index; legacy plain-array payloads migrate on load.
+- `chatHistory.js`: Manages saving/loading/pruning the chat history via the DMS plugin service. Persists history as a plain JSON array under `chatHistory` (stays rollback-compatible with older plugin versions) and the context-bucket index under a separate `contextBlocks` key; supports write batching (`beginBatch`/`endBatch`) and caps blocks (`setMaxBlocks`) with least-recently-used eviction.
 
 ## Core Architectural Decisions
 
@@ -60,12 +60,12 @@ The `modelPricing` object is hardcoded in `providers.js`. If OpenAI, Anthropic, 
 
 ### 9. Smart Context Routing
 When the `smartContext` setting is enabled, `providers.js#sendMessage` delegates to `context.js#orchestrate` instead of the linear-history flow (`sendMessageLegacy`):
-- Leg 1 sends the user message plus a compact bucket manifest to the MAIN model. If the model answers without a marker, that answer is final (usually cheaper than the legacy send).
-- If the model ends its response with `[[NEED_CONTEXT: <ids>]]`, leg 2 ships the requested buckets (summary + recent messages) and forces the final answer.
-- Negotiation legs are ephemeral: never persisted to `chatHistory.js`. Their token usage is merged into the final message metadata.
-- Blocks live in `chatHistory.js` as a parallel index over `masterHistory` (referenced by stable message ids), persist as a v2 payload, and survive pruning as summary-only entries.
-- Background summarization uses the configured fast model (`smartContextModel` setting) via `providers.js#sendRaw`, a one-off chat with no history side-effects.
-- Any routing failure falls back to `sendMessageLegacy` exactly once. Keep that ladder intact when touching routing code.
+- Leg 1 sends the user message plus a compact bucket manifest to the MAIN model; the manifest travels in the user role labeled as untrusted data (never concatenated into the system prompt). If the model answers without a tail-anchored `[[NEED_CONTEXT: ...]]` marker, that answer is final (usually cheaper than the legacy send).
+- If the model ends its response with `[[NEED_CONTEXT: <ids>]]`, leg 2 ships the requested buckets (summary + recent messages) as labeled untrusted data in the user role and forces the final answer; leg 2 failures are retried once before falling back. The first requested bucket owns the topic.
+- Negotiation legs are ephemeral: never persisted to `chatHistory.js`. Their token usage is merged into the final message metadata (including the legacy fallback path). Persistence for the final exchange is batched into a single write; `ChatBackendChat` skips its own model-message append when `metadata.smartContext === true`.
+- Blocks live in `chatHistory.js` as a parallel index over `masterHistory` (referenced by stable message ids), persist under the separate `contextBlocks` key, survive pruning as summary-only entries, and are capped with LRU eviction (`setMaxBlocks`).
+- Background summarization uses the configured fast model (`smartContextModel` setting) via `providers.js#sendRaw`, a one-off chat with no history side-effects. Stored summaries are sanitized (markers/newlines/quotes stripped) so the manifest can never carry protocol text.
+- Any routing failure after retries falls back to `sendMessageLegacy` exactly once. `sendRaw` restores both the model and API key of provider module state so fast-model requests on other instances cannot leak credentials. Keep that ladder intact when touching routing code.
 
 ### 10. Headless JS Tests
 `tests/` contains qmltestrunner suites for the pure-JS modules (`chatHistory.js`, `context.js`, plus a providers API smoke test). Run with:
