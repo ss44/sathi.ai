@@ -11,6 +11,7 @@ DankRectangle {
     property bool isUser: false
     property bool shouldAnimate: false
     property bool isThinking: false 
+    property string thinkingStatus: "" 
     property string displayedText: ""
     property string currentThinkingPhrase: "Thinking..."
     property var contentBlocks: []
@@ -56,7 +57,12 @@ DankRectangle {
     signal animationCompleted()
 
     function updateThinkingPhrase() {
-        root.currentThinkingPhrase = ThinkingPhrases.getRandomPhrase() + "...";
+        // A live routing status (smarter context) pins the phrase while active.
+        if (root.thinkingStatus !== "") {
+            root.currentThinkingPhrase = root.thinkingStatus + "...";
+        } else {
+            root.currentThinkingPhrase = ThinkingPhrases.getRandomPhrase() + "...";
+        }
     }
 
     Timer {
@@ -65,6 +71,12 @@ DankRectangle {
         repeat: true
         running: root.isThinking
         onTriggered: root.updateThinkingPhrase()
+    }
+
+    onThinkingStatusChanged: {
+        if (root.isThinking) {
+            root.updateThinkingPhrase();
+        }
     }
 
     Timer {

@@ -22,6 +22,18 @@ Item {
 
     signal newMessage(string text, bool isError, var metadata)
     signal chatHistoryLoaded(var chatHistory)
+    signal routingStatus(string status)
+
+    Component.onCompleted: {
+        Providers.setRoutingStatusSink(function(status) {
+            console.debug("[ChatBackendChat] Routing status: " + status);
+            root.routingStatus(status);
+        });
+    }
+
+    Component.onDestruction: {
+        Providers.setRoutingStatusSink(null);
+    }
 
     // We only ever want to try and load chat once.
     QtObject {

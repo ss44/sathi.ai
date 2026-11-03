@@ -180,7 +180,7 @@ PluginComponent {
         pluginId: root.pluginId
         pluginService: root.pluginService
 
-        onNewMessage: (text, isError, metadata) => {
+onNewMessage: (text, isError, metadata) => {
             root.isLoading = false;
             // Remove the thinking bubble if it exists
             if (chatModel.count > 0) {
@@ -188,12 +188,16 @@ PluginComponent {
                  if (last.isThinking === true) {
                      chatModel.remove(chatModel.count - 1);
                  }
-            }
+             }
             chatModel.append(createChatEntry(text, false, true, false, metadata));
 
             root.pruneUiHistory();
             
             root.showMessageAlertIfHidden(text);
+        }
+
+        onRoutingStatus: (status) => {
+            root.updateThinkingStatus(status);
         }
 
         onChatHistoryLoaded: (chatHistory) => {
@@ -252,8 +256,20 @@ PluginComponent {
             "shouldAnimate": shouldAnimate,
             "isThinking": isThinking,
             "thinkingStartTime": isThinking ? Date.now() : 0,
+            "thinkingStatus": "",
             "metadata": metadata || {}
         };
+    }
+
+    // Live routing status for the thinking bubble (smarter context phases).
+    function updateThinkingStatus(status) {
+        for (var i = chatModel.count - 1; i >= 0; i--) {
+            var entry = chatModel.get(i);
+            if (entry.isThinking === true) {
+                chatModel.setProperty(i, "thinkingStatus", status);
+                return;
+            }
+        }
     }
 
     function processMessage(message) {
@@ -344,6 +360,7 @@ PluginComponent {
                                 shouldAnimate: model.shouldAnimate
                                 isThinking: model.isThinking !== undefined ? model.isThinking : false
                                 thinkingStartTime: model.thinkingStartTime !== undefined ? model.thinkingStartTime : 0
+                                thinkingStatus: model.thinkingStatus !== undefined ? model.thinkingStatus : ""
                                 metadata: model.metadata !== undefined ? model.metadata : ({})
                                 showMessageDetails: pluginData.showMessageDetails === true
                                 width: chatColumn.width - (chatColumn.padding * 2)
