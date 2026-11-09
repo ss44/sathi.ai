@@ -2,6 +2,7 @@
 .import "gemini.js" as Gemini
 .import "openai.js" as OpenAI
 .import "anthropic.js" as Anthropic
+.import "context.js" as Context
 .import "../chatHistory.js" as ChatHistory
 
 var ProviderRegistry = {
@@ -16,6 +17,39 @@ var systemPrompt = "";
 
 // customProviderInstances stores { type, name, credential }
 var customProviderInstances = {};
+
+// UI sink for smart context routing status (set by ChatBackendChat).
+var routingStatusSink = null;
+
+Context.init({
+    sendRaw: sendRaw,
+    calculateCost: calculateCost,
+    getSystemPrompt: function() { return systemPrompt; },
+    getMainModelName: function() {
+        var m = currentModel();
+        return m ? m.name : "";
+    },
+    sendLegacy: sendMessageLegacy,
+    onStatus: emitRoutingStatus
+});
+
+function setRoutingStatusSink(sink) {
+    routingStatusSink = typeof sink === "function" ? sink : null;
+}
+
+function emitRoutingStatus(status) {
+    if (routingStatusSink) {
+        routingStatusSink(status);
+    }
+}
+
+function setSmartContext(enabled) {
+    Context.setEnabled(enabled);
+}
+
+function setFastModel(modelRef) {
+    Context.setFastModel(modelRef);
+}
 
 function clearProviders() {
     console.info("[Providers] Clearing all providers and loaded models");
@@ -143,6 +177,17 @@ function listModels(callback) {
     callback(modelsList);
 }
 
+function getProviderForInstance(instance) {
+    if (!instance) {
+        throw new Error("No provider instance");
+    }
+    var provider = ProviderRegistry[instance.type];
+    if (!provider) {
+        throw new Error("Unknown provider type: " + instance.type);
+    }
+    return provider;
+}
+
 function getProvider() {
     var model = currentModel();
     if (!model) {
@@ -152,13 +197,12 @@ function getProvider() {
 
     console.info("[Providers] getProvider: Current model is " + model.name + ", provider instance is " + model.provider);
     var instance = customProviderInstances[model.provider];
-    if (instance) {
-        console.info("[Providers] getProvider: Found instance type " + instance.type);
-        return ProviderRegistry[instance.type];
+    if (!instance) {
+        console.error("[Providers] getProvider: Unknown provider instance: " + model.provider);
+        throw new Error("Unknown provider instance: " + model.provider);
     }
 
-    console.error("[Providers] getProvider: Unknown provider instance: " + model.provider);
-    throw new Error("Unknown provider instance: " + model.provider);
+    return getProviderForInstance(instance);
 }
 
 
@@ -196,16 +240,117 @@ function calculateCost(modelName, promptTokens, completionTokens) {
     return cost;
 }
 
+function resolveInstance(modelRef) {
+    var model = modelRef ? loadedModels[modelRef] : currentModel();
+    if (!model) {
+        return null;
+    }
+    var instance = customProviderInstances[model.provider];
+    if (!instance) {
+        return null;
+    }
+    return { model: model, instance: instance };
+}
+
+// sendRaw: one-off chat request with no history side-effects. Used by smart context
+// routing legs and background summarization. messages use internal roles
+// ("system" entries are extracted into the system prompt, "user"/"model" are mapped
+// per provider). modelRef is a compound "instanceId|modelName" id; when omitted the
+// currently selected main model is used.
+function sendRaw(messages, modelRef, callback) {
+    var resolved = resolveInstance(modelRef);
+    if (!resolved) {
+        console.error("[Providers] sendRaw: no model available for ref: " + (modelRef || "<current>"));
+        callback(null, "No model available" + (modelRef ? " for fast model: " + modelRef : ""));
+        return;
+    }
+
+    var model = resolved.model;
+    var instance = resolved.instance;
+    var provider;
+    try {
+        provider = getProviderForInstance(instance);
+    } catch (e) {
+        console.error("[Providers] sendRaw provider error: " + e.message);
+        callback(null, "Provider error: " + e.message);
+        return;
+    }
+
+    // Extract system entries into the system prompt; keep conversation roles.
+    var systemContent = "";
+    var rest = [];
+    for (var i = 0; i < messages.length; i++) {
+        if (messages[i].role === "system") {
+            systemContent += (systemContent ? "\n\n" : "") + messages[i].content;
+        } else if (rest.length > 0 && rest[rest.length - 1].role === messages[i].role) {
+            // Merge consecutive same-role messages: some APIs (e.g. Gemini) require
+            // strict user/model alternation.
+            rest[rest.length - 1].content += "\n\n" + messages[i].content;
+        } else {
+            rest.push(messages[i]);
+        }
+    }
+
+    console.info("[Providers] sendRaw via " + instance.type + " model " + model.name);
+    var prevModel = typeof provider.getModel === "function" ? provider.getModel() : null;
+    var prevKey = typeof provider.getApiKey === "function" ? provider.getApiKey() : null;
+
+    var cb = function(response, error, metadata) {
+        // Restore shared module state: the legacy Gemini path relies on it, so a
+        // fast-model request on a different instance must not leak its credential.
+        if (prevModel !== null && typeof provider.setModel === "function") {
+            provider.setModel(prevModel);
+        }
+        if (prevKey !== null && typeof provider.setApiKey === "function") {
+            provider.setApiKey(prevKey);
+        }
+        callback(response, error, metadata);
+    };
+
+    if (instance.type === 'openai') {
+        return provider.sendChat(rest, systemContent, cb, {
+            baseUrl: instance.url,
+            apiKey: instance.credential,
+            model: model.name
+        });
+    } else if (instance.type === 'gemini') {
+        provider.setApiKey(instance.credential);
+        provider.setModel(model.name);
+        return provider.sendChat(rest, systemContent, cb);
+    } else {
+        provider.setApiKey(instance.credential);
+        provider.setModel(model.name);
+        return provider.sendChat(rest, systemContent, cb);
+    }
+}
+
 function sendMessage(text, callback) {
     console.info("[Providers] sendMessage called with text: " + text.substring(0, 20) + "...");
-    
-    var cModel = currentModel();
-    if (!cModel) {
+
+    if (!currentModel()) {
         console.error("[Providers] sendMessage: No current model. ModelKey: " + modelKey);
         callback(null, "No model selected");
         return;
     }
-    
+
+    if (Context.isEnabled() && Context.shouldEngage()) {
+        console.info("[Providers] Smart context engaged, routing message through context orchestrator");
+        return Context.orchestrate(text, callback);
+    }
+
+    console.debug("[Providers] Smart context idle (enabled: " + Context.isEnabled() +
+                  ", history: " + ChatHistory.getHistory().length + " msgs) — using legacy send");
+    return sendMessageLegacy(text, callback);
+}
+
+function sendMessageLegacy(text, callback) {
+    var cModel = currentModel();
+    if (!cModel) {
+        console.error("[Providers] sendMessageLegacy: No current model. ModelKey: " + modelKey);
+        callback(null, "No model selected");
+        return;
+    }
+
     ChatHistory.addMessage("user", text);
 
     console.info("[Providers] Sending chat. Provider instance: " + cModel.provider + ", Model name: " + cModel.name);
@@ -218,7 +363,7 @@ function sendMessage(text, callback) {
         callback(null, "Provider error: " + e.message);
         return;
     }
-    
+
     var instance = customProviderInstances[cModel.provider];
     if (!instance) {
         console.error("[Providers] Instance not found for provider: " + cModel.provider);
