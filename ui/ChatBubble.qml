@@ -390,12 +390,12 @@ DankRectangle {
         iconSize: 18
         tooltipText: {
             var tip = "Prompt: " + (root.metadata.promptTokens || 0) +
-                      " · Completion: " + (root.metadata.completionTokens || 0) +
-                      " · Total: " + (root.metadata.totalTokens || 0) +
-                      " · Cost: " + (root.metadata.estimatedCost ? "$" + root.metadata.estimatedCost.toFixed(6) : "N/A");
+                      "\nCompletion: " + (root.metadata.completionTokens || 0) +
+                      "\nTotal: " + (root.metadata.totalTokens || 0) +
+                      "\nCost: " + (root.metadata.estimatedCost ? "$" + root.metadata.estimatedCost.toFixed(6) : "N/A");
             if (root.metadata.bucketName) {
                 var name = root.metadata.bucketName;
-                tip += " · Context: " + (name.length > 48 ? name.substring(0, 48) + "…" : name);
+                tip += "\nContext: " + (name.length > 48 ? name.substring(0, 48) + "…" : name);
             }
             return tip;
         }
