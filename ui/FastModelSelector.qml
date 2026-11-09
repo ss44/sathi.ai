@@ -21,6 +21,7 @@ Column {
     property var _settings: null
     property string savedValue: ""
     property string _lastSnapshot: ""
+    property bool loaded: false
 
     ListModel {
         id: fastModels
@@ -48,16 +49,14 @@ Column {
         model: fastModels
         emptyText: "No models loaded yet..."
 
-        // Fires after AiSelector's internal handler has updated currentValueId
-        // (DDropdown assigns currentValue before emitting valueChanged, so reacting
-        // to currentValueChanged would persist the stale selection).
         onCurrentValueIdChanged: {
-            if (!root._settings || selector.currentValueId === root.savedValue) {
+            if (!root.loaded || !root._settings || selector.currentValueId === root.savedValue) {
                 return;
             }
             root.savedValue = selector.currentValueId;
-            root._settings.saveValue("smartContextModel", selector.currentValueId);
-            console.info("[FastModelSelector] Saved fast model: '" + selector.currentValueId + "'");
+            var valToSave = selector.currentValueId === "default" ? "" : selector.currentValueId;
+            root._settings.saveValue("smartContextModel", valToSave);
+            console.info("[FastModelSelector] Saved fast model: '" + valToSave + "'");
         }
     }
 
@@ -69,17 +68,24 @@ Column {
     }
 
     Component.onCompleted: {
+        Qt.callLater(init);
+    }
+
+    function init() {
         root._settings = findSettings(root.parent);
         if (root._settings) {
-            root.savedValue = root._settings.loadValue("smartContextModel", "");
+            var sv = root._settings.loadValue("smartContextModel", "default");
+            root.savedValue = (sv === "" || !sv) ? "default" : sv;
+            console.info("[FastModelSelector] Loaded saved fast model: '" + root.savedValue + "'");
         }
         refreshModels();
+        root.loaded = true;
     }
 
     function refreshModels() {
         Providers.listModels(function(models) {
             var snapshot = "";
-            var entries = [{ display_name: "Main model (default)", id: "" }];
+            var entries = [{ display_name: "Main model (default)", id: "default" }];
             if (models) {
                 for (var i = 0; i < models.length; i++) {
                     entries.push({ display_name: models[i].display_name, id: models[i].id });

@@ -185,7 +185,7 @@ function parseMarkerIds(markerValue) {
     var ids = raw.split(/[\s,]+/);
     var clean = [];
     for (var i = 0; i < ids.length; i++) {
-        var id = ids[i].trim();
+        var id = ids[i].trim().replace(/^[\[\("']+|[\]\)"']+$_/g, "");
         if (id === "new") {
             clean.push("new");
         } else if (id !== "" && id !== "none") {
@@ -208,8 +208,12 @@ function parseLeg1(text) {
         }
     }
     if (resolvable.length === 0) {
-        // "new" or unresolvable/none: no fetch needed, answer stands.
-        return { type: "answer", text: stripMarkers(text), requestedNew: requested.indexOf("new") !== -1 };
+        var stripped = stripMarkers(text);
+        if (!stripped) {
+            // Marker only, but block unresolvable: leg1 cannot answer directly.
+            return { type: "need", ids: [], text: "" };
+        }
+        return { type: "answer", text: stripped, requestedNew: requested.indexOf("new") !== -1 };
     }
     return { type: "need", ids: resolvable, text: stripMarkers(text) };
 }
@@ -311,6 +315,11 @@ function orchestrate(text, callback) {
     }
 
     function finish(answer, routing, forceNew) {
+        if (!answer || answer.trim() === "") {
+            console.warn("[Context] Finish received empty answer text, falling back to legacy send");
+            fallback("Empty answer text from context leg");
+            return;
+        }
         console.info("[Context] Answer ready (routing: " + (routing.length > 0 ? routing.join(",") : "direct") +
                      ", tokens: " + acc.promptTokens + " in / " + acc.completionTokens + " out across legs)");
         ChatHistory.beginBatch();
@@ -319,7 +328,8 @@ function orchestrate(text, callback) {
             var resolved = resolveExchangeBlock(routing, forceNew);
             meta = mergedMetadata(routing.length > 0 ? routing : ["direct"]);
             meta.bucketName = resolved.block.summary || resolved.block.id;
-            console.debug("[Context] Exchange bucket: " + meta.bucketName);
+            meta.bucketId = resolved.block.id;
+            console.debug("[Context] Exchange bucket: " + meta.bucketName + " (" + meta.bucketId + ")");
             var userMsg = ChatHistory.addMessage("user", text);
             var modelMsg = ChatHistory.addMessage("model", answer, meta);
             ChatHistory.assignMessages(resolved.block.id, [userMsg.id, modelMsg.id]);
@@ -424,6 +434,11 @@ function orchestrate(text, callback) {
             var parsed = parseLeg1(String(response));
             console.info("[Context] Leg 1 result: " + parsed.type + (parsed.ids ? " -> " + parsed.ids.join(",") : ""));
             if (parsed.type === "need") {
+                if (parsed.ids.length === 0) {
+                    console.warn("[Context] Leg 1 returned marker with no resolvable context blocks, falling back");
+                    fallback("Unresolvable context marker in leg 1 response");
+                    return;
+                }
                 leg2(parsed.ids, leg2MaxRetries);
             } else {
                 console.debug("[Context] Direct answer (" + parsed.text.length + " chars), requestedNew: " + parsed.requestedNew);

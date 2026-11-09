@@ -105,6 +105,16 @@ DankRectangle {
     }
 
 
+    onTextChanged: {
+        if (root.isThinking) return;
+        if (root.isUser || !root.shouldAnimate) {
+            root.displayedText = root.text;
+        } else if (!typeWriterTimer.running && root.text.length > 0) {
+            typeWriterTimer.currentIndex = 0;
+            typeWriterTimer.running = true;
+        }
+    }
+
     Component.onCompleted: {
         if (root.isThinking) {
              updateThinkingPhrase();
@@ -388,18 +398,52 @@ DankRectangle {
         iconName: "info"
         buttonSize: 32
         iconSize: 18
-        tooltipText: {
+        
+        MouseArea {
+            id: detailsHoverArea
+            anchors.fill: parent
+            hoverEnabled: true
+            acceptedButtons: Qt.NoButton
+        }
+
+        onClicked: {}
+    }
+
+    ToolTip {
+        id: detailsToolTip
+        parent: detailsButton
+        visible: detailsHoverArea.containsMouse && text !== ""
+        delay: 300
+        
+        text: {
+            if (!detailsButton.visible || !root.metadata) return "";
             var tip = "Prompt: " + (root.metadata.promptTokens || 0) +
                       "\nCompletion: " + (root.metadata.completionTokens || 0) +
                       "\nTotal: " + (root.metadata.totalTokens || 0) +
                       "\nCost: " + (root.metadata.estimatedCost ? "$" + root.metadata.estimatedCost.toFixed(6) : "N/A");
-            if (root.metadata.bucketName) {
-                var name = root.metadata.bucketName;
-                tip += "\nContext: " + (name.length > 48 ? name.substring(0, 48) + "…" : name);
+            
+            var bucketLabel = root.metadata.bucketName || root.metadata.bucketId;
+            if (bucketLabel) {
+                if (root.metadata.bucketId && root.metadata.bucketName && root.metadata.bucketName !== root.metadata.bucketId) {
+                    bucketLabel = root.metadata.bucketName + " (" + root.metadata.bucketId + ")";
+                }
+                tip += "\nBucket: " + (bucketLabel.length > 60 ? bucketLabel.substring(0, 60) + "…" : bucketLabel);
             }
             return tip;
         }
-        
-        onClicked: {}
+
+        contentItem: Text {
+            text: detailsToolTip.text
+            color: Theme.surfaceVariantText
+            font.pixelSize: Theme.fontSizeSmall
+            horizontalAlignment: Text.AlignLeft
+        }
+
+        background: Rectangle {
+            color: Theme.surfaceContainerHigh
+            border.color: Theme.outlineVariant
+            border.width: 1
+            radius: Theme.cornerRadiusXS
+        }
     }
 }
