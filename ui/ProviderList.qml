@@ -114,6 +114,8 @@ Column {
         var newProviders = providers.slice();
         var defaultName = type.charAt(0).toUpperCase() + type.slice(1);
         if (type === "openai") defaultName = "OpenAI Compatible";
+        if (type === "hermes") defaultName = "Hermes Agent";
+        if (type === "openclaw") defaultName = "OpenClaw";
         
         var newProv = {
             id: "prov_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
@@ -126,6 +128,10 @@ Column {
             newProv.useGrounding = false;
         } else if (type === "openai") {
             newProv.url = "https://api.openai.com";
+        } else if (type === "hermes") {
+            newProv.url = "http://localhost:8080";
+        } else if (type === "openclaw") {
+            newProv.url = "http://localhost:18789";
         }
         
         newProviders.push(newProv);
@@ -183,12 +189,16 @@ Column {
             currentValue: {
                 if (parent.selectedType === "gemini") return "Google Gemini";
                 if (parent.selectedType === "anthropic") return "Anthropic Claude";
+                if (parent.selectedType === "hermes") return "Hermes Agent";
+                if (parent.selectedType === "openclaw") return "OpenClaw";
                 return "OpenAI Compatible";
             }
-            options: ["Google Gemini", "Anthropic Claude", "OpenAI Compatible"]
+            options: ["Google Gemini", "Anthropic Claude", "OpenAI Compatible", "Hermes Agent", "OpenClaw"]
             onValueChanged: newValue => {
                 if (newValue === "Google Gemini") parent.selectedType = "gemini";
                 else if (newValue === "Anthropic Claude") parent.selectedType = "anthropic";
+                else if (newValue === "Hermes Agent") parent.selectedType = "hermes";
+                else if (newValue === "OpenClaw") parent.selectedType = "openclaw";
                 else parent.selectedType = "openai";
             }
         }
@@ -229,7 +239,10 @@ Column {
                     width: parent.width
                     
                     StyledText {
-                        text: (modelData.type === "openai" ? "OPENAI COMPATIBLE" : modelData.type.toUpperCase()) + " CONFIGURATION"
+                        text: (modelData.type === "openai" ? "OPENAI COMPATIBLE" : 
+                               modelData.type === "hermes" ? "HERMES AGENT" : 
+                               modelData.type === "openclaw" ? "OPENCLAW" : 
+                               modelData.type.toUpperCase()) + " CONFIGURATION"
                         color: Theme.primary
                         font.pixelSize: Theme.fontSizeSmall
                         font.weight: Font.Bold
@@ -272,7 +285,7 @@ Column {
                 
                 DTextField {
                     width: parent.width
-                    visible: modelData.type === "openai"
+                    visible: modelData.type === "openai" || modelData.type === "hermes" || modelData.type === "openclaw"
                     placeholderText: "Base URL (e.g. https://api.openai.com or http://localhost:11434)"
                     text: modelData.url || ""
                     onTextChanged: {

@@ -19,6 +19,8 @@ var maxBlocks = 12;
 var persistBatchDepth = 0;
 var persistDirty = false;
 
+var statefulSessions = {};
+
 var messageIdSeq = 0;
 var blockIdSeq = 0;
 
@@ -58,6 +60,7 @@ function clearSavedChatHistory() {
     console.log("Clearing saved chat history.");
     pluginService.savePluginData(pluginId, "chatHistory", null);
     pluginService.savePluginData(pluginId, "contextBlocks", null);
+    pluginService.savePluginData(pluginId, "statefulSessions", null);
 }
 
 function clearChatHistory() {
@@ -66,6 +69,26 @@ function clearChatHistory() {
     contextBlocks = [];
     lastUsedBlockId = null;
     clearSavedChatHistory();
+}
+
+function clearSessionForInstance(instanceId) {
+    if (statefulSessions[instanceId]) {
+        delete statefulSessions[instanceId];
+        beginBatch();
+        persistDirty = true;
+        endBatch();
+    }
+}
+
+function getSessionForInstance(instanceId) {
+    return statefulSessions[instanceId] || null;
+}
+
+function setSessionForInstance(instanceId, sessionId) {
+    statefulSessions[instanceId] = sessionId;
+    beginBatch();
+    persistDirty = true;
+    endBatch();
 }
 
 function pruneHistory() {
@@ -95,6 +118,7 @@ function saveChatHistory() {
         blocks: contextBlocks,
         lastUsedBlockId: lastUsedBlockId
     }));
+    pluginService.savePluginData(pluginId, "statefulSessions", JSON.stringify(statefulSessions));
 }
 
 function loadChatHistory() {
@@ -126,6 +150,18 @@ function loadChatHistory() {
             console.error("Error parsing chat history: " + e);
             masterHistory = [];
         }
+    }
+    
+    var loadedSessions = pluginService.loadPluginData(pluginId, "statefulSessions");
+    if (loadedSessions) {
+        try {
+            statefulSessions = JSON.parse(loadedSessions);
+        } catch (e) {
+            console.error("Error parsing statefulSessions: " + e);
+            statefulSessions = {};
+        }
+    } else {
+        statefulSessions = {};
     }
 
     contextBlocks = [];
