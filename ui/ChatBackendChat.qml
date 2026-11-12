@@ -104,6 +104,8 @@ Item {
             } else {
                 // Smart context orchestration persists both turns itself; adding the
                 // model message here would duplicate it in history.
+                // Stateful agents (hermes, openclaw) bypass masterHistory internally
+                // but we still want to render them in the UI.
                 if (!metadata || metadata.smartContext !== true) {
                     ChatHistory.addMessage("model", response, metadata);
                 }
@@ -152,6 +154,10 @@ Item {
 
     function clearChat() {
         console.debug("Clearing chat history as requested.");
+        var currentInstanceId = Providers.resolveInstance() ? Providers.resolveInstance().instance.id : null;
+        if (currentInstanceId) {
+             ChatHistory.clearSessionForInstance(currentInstanceId);
+        }
         ChatHistory.clearChatHistory();
         chatModel.clear();
     }

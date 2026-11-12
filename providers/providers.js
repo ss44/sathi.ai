@@ -2,13 +2,17 @@
 .import "gemini.js" as Gemini
 .import "openai.js" as OpenAI
 .import "anthropic.js" as Anthropic
+.import "hermes.js" as Hermes
+.import "openclaw.js" as OpenClaw
 .import "context.js" as Context
 .import "../chatHistory.js" as ChatHistory
 
 var ProviderRegistry = {
     "gemini": Gemini,
     "openai": OpenAI,
-    "anthropic": Anthropic
+    "anthropic": Anthropic,
+    "hermes": Hermes,
+    "openclaw": OpenClaw
 };
 
 var loadedModels = {};
@@ -69,6 +73,10 @@ function addCustomProvider(type, name, credential, url, useGrounding, id, modelF
         useGrounding: useGrounding,
         modelFilter: modelFilter || ""
     };
+}
+
+function isStatefulProvider(type) {
+    return type === "hermes" || type === "openclaw";
 }
 
 function fetchModelsForInstance(instanceId, callback) {
@@ -136,6 +144,8 @@ function fetchModelsForInstance(instanceId, callback) {
     };
     
     if (instance.type === 'openai') {
+        provider.listModels(cb, { baseUrl: instance.url, apiKey: instance.credential, instanceName: instance.name });
+    } else if (instance.type === 'hermes' || instance.type === 'openclaw') {
         provider.listModels(cb, { baseUrl: instance.url, apiKey: instance.credential, instanceName: instance.name });
     } else {
         provider.listModels(cb);
@@ -371,6 +381,10 @@ function sendMessageLegacy(text, callback) {
         return;
     }
     
+    if (isStatefulProvider(instance.type)) {
+        return sendStatefulMessage(text, cModel, instance, provider, callback);
+    }
+    
     console.info("[Providers] Preparing provider credential. Type: " + instance.type);
     
     var cb = function(response, error, metadata){
@@ -414,6 +428,27 @@ function sendMessageLegacy(text, callback) {
         console.info("[Providers] Calling sendChat on provider " + instance.type);
         return provider.sendChat(ChatHistory.getHistory(), systemPrompt, cb);
     }
+}
+
+function sendStatefulMessage(text, cModel, instance, provider, callback) {
+    var sessionId = ChatHistory.getSessionForInstance(instance.id);
+    
+    var cb = function(response, error, metadata) {
+        if (error) {
+            console.error("[Providers] stateful sendChat returned error: " + error);
+        }
+        if (response && metadata && metadata.sessionId) {
+            ChatHistory.setSessionForInstance(instance.id, metadata.sessionId);
+        }
+        callback(response, error, metadata);
+    };
+
+    console.info("[Providers] Calling sendChat on stateful provider " + instance.type + " with session " + sessionId);
+    return provider.sendChat(text, sessionId, cb, {
+        baseUrl: instance.url,
+        apiKey: instance.credential,
+        model: cModel.name
+    });
 }
 
 function isModelLoaded(modelName) {
