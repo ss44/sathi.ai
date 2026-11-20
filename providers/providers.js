@@ -102,6 +102,9 @@ function fetchModelsForInstance(instanceId, callback) {
     console.info("[Providers] Calling listModels on provider: " + instance.type);
     
     var cb = (models, error) => {
+        // Ignore requests from before a settings reload, including disabled providers.
+        if (customProviderInstances[instanceId] !== instance) return;
+
         if (error) {
             console.error("[Providers] Error fetching models for " + instance.name + ": " + error);
             callback(null, error);
@@ -454,4 +457,3 @@ function sendStatefulMessage(text, cModel, instance, provider, callback) {
 function isModelLoaded(modelName) {
     return loadedModels.hasOwnProperty(modelName);
 }
-
