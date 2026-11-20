@@ -75,6 +75,11 @@ QT_QPA_PLATFORM=offscreen /usr/lib/qt6/bin/qmltestrunner -input tests/tst_contex
 ```
 Note: the `qml`/`qmltestrunner` binaries on PATH may be Qt 5 on some systems; use `/usr/lib/qt6/bin/` explicitly. Test mocks inject fake `sendRaw`/`sendLegacy`/`pluginService` implementations — extend them when adding routing behavior.
 
+### 11. Hermes Model Discovery
+Hermes `/v1/models` advertises the gateway default and configured route aliases, not the upstream catalog. `hermes.js` combines those aliases with `GET /api/model/options?include_unconfigured=false` (relative to the configured profile URL). The inventory returns `{providers: [{slug, name, models: [string], authenticated, unavailable_models}], model, provider}` without pagination. Skip explicitly unauthenticated rows and unavailable model IDs; temporary rate limits do not remove configured routes. Inventory entries retain the original model string and send the row's `slug` as the explicit chat-completions `provider`, which works without Hermes's `direct_model_requests` opt-in. Aliases send no provider. JSON-array model IDs distinguish aliases from upstream provider/model pairs; upstream session identity includes both provider and model while alias session seeds retain their previous shape. Existing model filters apply to the provider-labelled display names. If inventory discovery fails, advertised aliases remain usable.
+
+Source checked at NousResearch/hermes-agent revision `514e2cbda616f57d35e7dd9e703d5db20a564bba`: `gateway/platforms/api_server.py` (`_handle_models`, `_handle_model_options`, `_request_agent_overrides`) and `hermes_cli/inventory.py` (`build_model_options_payload`, `_apply_picker_hints`, `_apply_pricing`). Inventory is cache-backed and not a guarantee that credentials, quota, or the upstream endpoint will still work at send time; Hermes session overrides and configured alias routing retain server-side precedence.
+
 ## Development Tips & Gotchas
 
 1. **Logging Visibility:**

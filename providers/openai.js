@@ -82,6 +82,9 @@ function sendChat(history, systemPrompt, callback, config) {
         model: config ? config.model : currentModel,
         messages: messages
     };
+    if (config && config.upstreamProvider) {
+        data.provider = config.upstreamProvider;
+    }
 
     var key = config ? config.apiKey : apiKey;
     var headers = Object.assign({}, config && config.headers ? config.headers : {});

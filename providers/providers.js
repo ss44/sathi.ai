@@ -131,7 +131,7 @@ function fetchModelsForInstance(instanceId, callback) {
                 m.providerName = instance.name;
                 // Avoid model name collisions between different provider instances
                 // by using a unique internal ID, but preserving the original name for the API call
-                m.id = instanceId + "|" + m.name;
+                m.id = instanceId + "|" + (m.modelId || m.name);
                 loadedModels[m.id] = m;
             });
             
@@ -439,7 +439,9 @@ function sendStatefulMessage(text, cModel, instance, provider, callback) {
             baseUrl: instance.url,
             apiKey: instance.credential,
             model: cModel.name,
-            sessionId: ChatHistory.hermesSessionId(JSON.stringify([instance.id, Hermes.baseUrl(instance.url), cModel.name]))
+            upstreamProvider: cModel.upstreamProvider,
+            sessionId: ChatHistory.hermesSessionId(JSON.stringify([instance.id, Hermes.baseUrl(instance.url),
+                cModel.upstreamProvider ? [cModel.upstreamProvider, cModel.name] : cModel.name]))
         });
     }
     var sessionId = ChatHistory.getSessionForInstance(instance.id);
