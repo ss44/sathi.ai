@@ -8,7 +8,7 @@ TestCase {
     name: "ProvidersSyntax"
     property var originalRequest
 
-    function init() { originalRequest = HttpClient.request; }
+    function init() { originalRequest = HttpClient.request; Hermes.discoveryRefreshes = {}; }
     function cleanup() { HttpClient.request = originalRequest; }
 
     function test_hermes_inventory() {
@@ -68,7 +68,7 @@ TestCase {
             if (url.indexOf("/v1/models") !== -1)
                 callback({ data: [{ id: "hermes-agent" }, { id: "profile-alias" }] }, null);
             else {
-                compare(url, "http://localhost:8642/p/work/api/model/options?include_unconfigured=false");
+                compare(url, "http://localhost:8642/p/work/api/model/options?include_unconfigured=false&refresh=true");
                 callback(data.failed ? null : { providers: [{ slug: "custom:work", models: ["org/model"] }] },
                          data.failed ? "HTTP Error: 404" : null);
             }
@@ -84,6 +84,79 @@ TestCase {
 
     function test_hermes_chat_data() {
         return [{ tag: "upstream", provider: "custom:work" }, { tag: "alias", provider: undefined }];
+    }
+
+    function test_hermes_full_discovery_throttle_and_collision_data() {
+        return [{ tag: "collision", aliasFailure: false }, { tag: "unknown aliases", aliasFailure: true }];
+    }
+
+    function test_hermes_full_discovery_throttle_and_collision(data) {
+        var inventories = [];
+        var sent = false;
+        HttpClient.request = function(method, url, callback) {
+            if (method === "POST") { sent = true; return; }
+            if (url.indexOf("/v1/models") !== -1)
+                callback(data.aliasFailure ? null : { data: [{ id: "shared" }] }, data.aliasFailure ? "HTTP Error: 503" : null);
+            else {
+                inventories.push(url);
+                callback({ providers: [{ slug: "openai-luna", models: ["shared"] },
+                                         { slug: "openai-sol", models: ["shared"] }] }, null);
+            }
+        };
+        var result;
+        function discovered(models, error) { verify(!error); result = models; }
+        var config = { baseUrl: "http://localhost:8642" };
+        Hermes.listModels(discovered, config);
+        Hermes.listModels(discovered, config);
+        verify(inventories[0].indexOf("refresh=true") !== -1);
+        verify(inventories[1].indexOf("refresh=true") === -1);
+        Hermes.discoveryRefreshes[config.baseUrl] -= 300001;
+        Hermes.listModels(discovered, config);
+        verify(inventories[2].indexOf("refresh=true") !== -1);
+        compare(result.length, data.aliasFailure ? 2 : 3);
+        var first = result[data.aliasFailure ? 0 : 1];
+        verify(first.modelId !== result[result.length - 1].modelId);
+        var expected = data.aliasFailure ? "Cannot verify" : "shadows";
+        verify(first.routingError.indexOf(expected) !== -1);
+        Hermes.sendChat([{ role: "user", content: "test" }], "", function(text, error) {
+            verify(!text); verify(error.indexOf(expected) !== -1);
+        }, Object.assign({}, first, { sessionId: "test" }));
+        verify(!sent);
+    }
+
+    function test_hermes_registry_to_wire() {
+        Providers.clearProviders();
+        Providers.addCustomProvider("hermes", "Hermes", "", "http://localhost:8642", false, "wire-test", "");
+        var sessions = [];
+        var providers = [];
+        HttpClient.request = function(method, url, callback, body, headers) {
+            if (method === "GET") {
+                callback(url.indexOf("/v1/models") !== -1 ? { data: [] } : {
+                    providers: [{ slug: "openai-luna", models: ["shared"] },
+                                { slug: "openai-sol", models: ["shared"] }] }, null);
+                return;
+            }
+            compare(body.model, "shared");
+            providers.push(body.provider);
+            sessions.push(headers["X-Hermes-Session-Id"]);
+            callback({ choices: [{ message: { content: "answer" } }] }, null,
+                     { getResponseHeader: function() { return headers["X-Hermes-Session-Id"]; } });
+        };
+        var models;
+        Providers.fetchModelsForInstance("wire-test", function(result) { models = result; });
+        // The adapter reads the existing history, not the text argument.
+        var originalSend = Hermes.sendChat;
+        var adapter = { sendChat: function(history, prompt, callback, config) {
+            return originalSend([{ role: "user", content: "test" }], prompt, callback, config);
+        } };
+        var instance = { id: "wire-test", type: "hermes", url: "http://localhost:8642" };
+        [models[0], models[1], models[0]].forEach(function(model) {
+            Providers.sendStatefulMessage("test", model, instance, adapter, function(text, error) { verify(!error); });
+        });
+        compare(providers.join(","), "openai-luna,openai-sol,openai-luna");
+        verify(sessions[0] !== sessions[1]);
+        compare(sessions[0], sessions[2]);
+        Providers.clearProviders();
     }
 
     function test_hermes_chat(data) {

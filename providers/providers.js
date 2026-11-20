@@ -440,6 +440,7 @@ function sendStatefulMessage(text, cModel, instance, provider, callback) {
             apiKey: instance.credential,
             model: cModel.name,
             upstreamProvider: cModel.upstreamProvider,
+            routingError: cModel.routingError,
             sessionId: ChatHistory.hermesSessionId(JSON.stringify([instance.id, Hermes.baseUrl(instance.url),
                 cModel.upstreamProvider ? [cModel.upstreamProvider, cModel.name] : cModel.name]))
         });
