@@ -84,17 +84,24 @@ function sendChat(history, systemPrompt, callback, config) {
     };
 
     var key = config ? config.apiKey : apiKey;
-    var headers = {};
+    var headers = Object.assign({}, config && config.headers ? config.headers : {});
     if (key) {
         headers["Authorization"] = "Bearer " + key;
     }
 
-    return HttpClient.request("POST", url, function(response, error) {
+    return HttpClient.request("POST", url, function(response, error, xhr) {
         if (error) {
             callback(null, error);
             return;
         }
 
+        if (config && config.validateResponse) {
+            var validationError = config.validateResponse(response, xhr);
+            if (validationError) {
+                callback(null, validationError);
+                return;
+            }
+        }
         if (response.choices && response.choices.length > 0) {
             var content = response.choices[0].message.content;
             var meta = response.usage ? { promptTokens: response.usage.prompt_tokens, completionTokens: response.usage.completion_tokens, totalTokens: response.usage.total_tokens } : {};

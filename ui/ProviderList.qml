@@ -129,7 +129,7 @@ Column {
         } else if (type === "openai") {
             newProv.url = "https://api.openai.com";
         } else if (type === "hermes") {
-            newProv.url = "http://localhost:8080";
+            newProv.url = "http://localhost:8642";
         } else if (type === "openclaw") {
             newProv.url = "http://localhost:18789";
         }
@@ -286,7 +286,7 @@ Column {
                 DTextField {
                     width: parent.width
                     visible: modelData.type === "openai" || modelData.type === "hermes" || modelData.type === "openclaw"
-                    placeholderText: "Base URL (e.g. https://api.openai.com or http://localhost:11434)"
+                    placeholderText: modelData.type === "hermes" ? "Hermes URL (http://localhost:8642 or http://localhost:8642/p/profile)" : "Base URL (e.g. https://api.openai.com or http://localhost:11434)"
                     text: modelData.url || ""
                     onTextChanged: {
                         if (root.loaded && text !== (modelData.url || "")) {

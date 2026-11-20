@@ -50,7 +50,9 @@ function endBatch() {
 function setPersistChatHistory(enabled) {
     console.log("Setting persistChatHistory to: " + enabled);
     persistChatHistory = enabled;
-    enabled ? saveChatHistory() : clearSavedChatHistory();
+    // Do not overwrite persisted history before the startup load has run.
+    if (!enabled) clearSavedChatHistory();
+    else if (masterHistory.length > 0) saveChatHistory();
 }
 
 function clearSavedChatHistory() {
@@ -66,6 +68,7 @@ function clearSavedChatHistory() {
 function clearChatHistory() {
     console.debug("Clearing in-memory chat history.");
     masterHistory = [];
+    statefulSessions = {};
     contextBlocks = [];
     lastUsedBlockId = null;
     clearSavedChatHistory();
@@ -82,6 +85,14 @@ function clearSessionForInstance(instanceId) {
 
 function getSessionForInstance(instanceId) {
     return statefulSessions[instanceId] || null;
+}
+
+function hermesSessionId(scope) {
+    // Scope includes provider instance, profile URL and alias, not the display name.
+    if (!Object.prototype.hasOwnProperty.call(statefulSessions, scope)) {
+        setSessionForInstance(scope, "sathi-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2));
+    }
+    return statefulSessions[scope];
 }
 
 function setSessionForInstance(instanceId, sessionId) {
@@ -261,6 +272,7 @@ function addMessage(role, content, metadata) {
 
 function setHistory(history) {
     masterHistory = history;
+    statefulSessions = {};
     // History resets come from system prompt changes; buckets are no longer valid.
     contextBlocks = [];
     lastUsedBlockId = null;
