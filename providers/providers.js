@@ -94,7 +94,7 @@ function fetchModelsForInstance(instanceId, callback) {
     }
     
     // Set credential synchronously before calling listModels
-    if (instance.type !== 'openai') {
+    if (instance.type !== 'openai' && instance.type !== 'hermes') {
         console.info("[Providers] Setting API key for " + instance.type + " instance " + instance.name);
         provider.setApiKey(instance.credential);
     }
@@ -434,6 +434,14 @@ function sendMessageLegacy(text, callback) {
 }
 
 function sendStatefulMessage(text, cModel, instance, provider, callback) {
+    if (instance.type === 'hermes') {
+        return provider.sendChat(ChatHistory.getHistory(), "", callback, {
+            baseUrl: instance.url,
+            apiKey: instance.credential,
+            model: cModel.name,
+            sessionId: ChatHistory.hermesSessionId(JSON.stringify([instance.id, Hermes.baseUrl(instance.url), cModel.name]))
+        });
+    }
     var sessionId = ChatHistory.getSessionForInstance(instance.id);
     
     var cb = function(response, error, metadata) {

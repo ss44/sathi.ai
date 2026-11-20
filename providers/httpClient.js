@@ -7,7 +7,7 @@ function request(method, url, callback, data, headers) {
             if (xhr.status === 200) {
                 try {
                     var response = JSON.parse(xhr.responseText);
-                    callback(response, null);
+                    callback(response, null, xhr);
                 } catch (e) {
                     callback(null, "Failed to parse response: " + e.message);
                 }
