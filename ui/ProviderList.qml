@@ -121,6 +121,7 @@ Column {
             id: "prov_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
             type: type,
             name: "New " + defaultName,
+            enabled: true,
             credential: ""
         };
         
@@ -157,6 +158,13 @@ Column {
     function removeProvider(index) {
         var newProviders = providers.slice();
         newProviders.splice(index, 1);
+        providers = newProviders;
+        saveProviders();
+    }
+
+    function toggleProvider(index) {
+        var newProviders = providers.slice();
+        newProviders[index] = Object.assign({}, providers[index], { enabled: providers[index].enabled === false });
         providers = newProviders;
         saveProviders();
     }
@@ -232,6 +240,7 @@ Column {
             model: root.providers
             
             Column {
+                property bool providerEnabled: modelData.enabled !== false
                 width: parent.width
                 spacing: Theme.spacingS
                 
@@ -242,14 +251,26 @@ Column {
                         text: (modelData.type === "openai" ? "OPENAI COMPATIBLE" : 
                                modelData.type === "hermes" ? "HERMES AGENT" : 
                                modelData.type === "openclaw" ? "OPENCLAW" : 
-                               modelData.type.toUpperCase()) + " CONFIGURATION"
-                        color: Theme.primary
+                               modelData.type.toUpperCase()) + " CONFIGURATION" + (providerEnabled ? "" : " (DISABLED)")
+                        color: providerEnabled ? Theme.primary : Theme.surfaceVariantText
                         font.pixelSize: Theme.fontSizeSmall
                         font.weight: Font.Bold
-                        width: parent.width - removeBtn.width
+                        width: parent.width - visibilityBtn.width - removeBtn.width
                         anchors.verticalCenter: parent.verticalCenter
                     }
                     
+                    DActionButton {
+                        id: visibilityBtn
+                        iconName: providerEnabled ? "visibility" : "visibility_off"
+                        buttonSize: 32
+                        iconSize: 18
+                        iconColor: providerEnabled ? Theme.surfaceText : Theme.surfaceVariantText
+                        backgroundColor: "transparent"
+                        Accessible.name: providerEnabled ? "Disable provider" : "Enable provider"
+                        Accessible.description: "Hide this provider's models without removing its configuration"
+                        onClicked: root.toggleProvider(index)
+                    }
+
                     DActionButton {
                         id: removeBtn
                         iconName: "delete"

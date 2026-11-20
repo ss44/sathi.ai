@@ -55,7 +55,7 @@ Item {
             console.info("[ChatBackendSettings] Loading " + customProviders.length + " custom providers");
             for (let i = 0; i < customProviders.length; i++) {
                 let p = customProviders[i];
-                if (!p || !p.type) continue;
+                if (!p || !p.type || p.enabled === false) continue;
                 
                 // Decrypt credential
                 let rawCred = Crypto.decodeKey(p.credential);
